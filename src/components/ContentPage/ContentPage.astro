@@ -1,0 +1,84 @@
+---
+import { type Block, createRenderer } from '@contensis/canvas-html';
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import background from '~/assets/background.svg';
+import ClientSearch from '~/components/Search/ClientSearch';
+import Layout from '~/layouts/Layout.astro';
+
+interface ContentPageProps {
+  mappedTitle: string;
+  canvas: Block[];
+}
+
+interface Props extends ContentTypePageProps<ContentPageProps> {}
+
+const { contentTypeId, entry, mappedEntry, node, resolver } = Astro.props;
+
+const renderCanvas = createRenderer();
+const canvasHtml = mappedEntry.canvas
+  ? renderCanvas({ data: mappedEntry.canvas })
+  : '';
+
+const { items: searchResults } = await resolver.search(
+  'sys.dataFormat=entry ORDER BY sys.version.created desc',
+  {
+    pageSize: 3,
+  }
+);
+---
+
+<Layout
+  pageTitle={entry.entryTitle || node.displayName || 'Content Loader Test'}
+>
+  <div id="container">
+    <img id="background" src={background.src} alt="" fetchpriority="high" />
+    <main>
+      <h1>
+        Rendered component for content type: {contentTypeId} (ContentPage.astro)
+      </h1>
+      <p>Mapped entry title: {mappedEntry.mappedTitle}</p>
+      <p>
+        Resolved node: {node.id}
+        {node.path}
+      </p>
+      {canvasHtml && <div class="canvas-content" set:html={canvasHtml} />}
+      {
+        /* We cannot render the ClientSearch component client-side unless we mark the whole
+             ContentPage component with a client-side directive. */
+      }
+      <ClientSearch versionStatus={entry.sys.versionStatus} client:visible />
+      <ClientSearch
+        serverFetchedSearchResults={searchResults}
+        versionStatus={entry.sys.versionStatus}
+      />
+    </main>
+  </div>
+  <style>
+    #background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      filter: blur(100px);
+    }
+
+    #container {
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
+        sans-serif;
+      height: 100%;
+    }
+
+    main {
+      height: 100%;
+      padding: 2em;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-top: 0.25em;
+    }
+  </style>
+</Layout>

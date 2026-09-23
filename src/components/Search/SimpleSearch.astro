@@ -1,0 +1,35 @@
+---
+import type { ContentResolver, PageData } from '@contensis/content-resolver';
+
+// const content = contentLoader(Astro.request.headers);
+
+interface Props {
+  content: ContentResolver;
+  pageData: PageData;
+}
+
+const content = Astro.props.content;
+const { items } = await content.search('sys.dataFormat=entry', {
+  pageSize: 3,
+});
+
+const surrogateKeys = Astro.props.pageData.getSurrogateKeys?.() || [];
+---
+
+<h2>Search results:</h2>
+<p>Version status: {content.api.clientConfig.versionStatus}</p>
+<p>count: {items.length}</p>
+{
+  items.length > 0 &&
+    items.map(item => (
+      <div>
+        <p>
+          <em>{item.sys.contentTypeId}</em>
+          {item.entryTitle}
+        </p>
+      </div>
+    ))
+}
+<p>
+  Surrogate keys: {surrogateKeys.length} [{surrogateKeys.join(', ')}]
+</p>

@@ -1,0 +1,217 @@
+---
+import type { ContentType } from 'contensis-core-api';
+import { undefined } from 'astro:schema';
+import FormRender from './FormRender.astro';
+
+interface Props {
+  forms: ContentType[];
+  selectedFormId?: string;
+  selectedLanguage?: string;
+  selectedVersion?: string;
+}
+
+const { forms, selectedFormId, selectedLanguage, selectedVersion } =
+  Astro.props;
+
+const selectedForm = forms.find(
+  f => f.id.toLowerCase() === selectedFormId?.toLowerCase()
+);
+
+const language =
+  selectedLanguage === 'default'
+    ? selectedForm?.defaultLanguage || selectedLanguage
+    : selectedLanguage;
+
+const activeTab =
+  Astro.url.searchParams.get('render') === 'react' ? 'react' : 'esm';
+---
+
+<div class="form-selector">
+  <h1>This is the form page.</h1>
+  <section id="form-selector">
+    <form method="GET" id="form-selector-form" class="form-controls">
+      <div class="full-width">
+        <label class="block-label">
+          Pick a form:
+          <select
+            id="select-form"
+            title="Select a form from the list"
+            class="full-width"
+          >
+            <option value=""></option>
+            {
+              forms.map(contentType => (
+                <option
+                  value={contentType.id.toLowerCase()}
+                  selected={
+                    contentType.id.toLowerCase() ===
+                    selectedFormId?.toLowerCase()
+                  }
+                >
+                  {contentType.name?.[contentType.defaultLanguage || 'en-GB']}
+                </option>
+              ))
+            }
+            <option value="~invalid-form~"> ~ An invalid form ~ </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="flex-container">
+        <div class="flex-item">
+          <label class="block-label">
+            Language:
+            <select
+              name="lang"
+              id="select-language"
+              title="Choose the language variaton of the form to render"
+              class="full-width"
+            >
+              <option value=""></option>
+              <option value="default" selected={selectedLanguage === 'default'}>
+                default
+              </option>
+              {
+                selectedForm?.supportedLanguages
+                  ? selectedForm.supportedLanguages.map(v => (
+                      <option value={v} selected={v === selectedLanguage}>
+                        {v}
+                      </option>
+                    ))
+                  : undefined
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="flex-item">
+          <label class="block-label">
+            Version:
+            <select
+              name="version"
+              id="select-version"
+              title="Choose the version of the form to render"
+              class="full-width"
+            >
+              {
+                ['published', 'latest'].map(v => (
+                  <option value={v} selected={v === selectedVersion}>
+                    {v}
+                  </option>
+                ))
+              }
+            </select>
+          </label>
+        </div>
+
+        <div class="flex-center">
+          <button class="button" type="submit">Go</button>
+        </div>
+      </div>
+    </form>
+  </section>
+  <hr />
+  <section id="form-render">
+    <FormRender
+      formId={selectedFormId}
+      language={language}
+      versionStatus={selectedVersion}
+      renderType={activeTab}
+    />
+  </section>
+</div>
+
+<script is:inline>
+  const formSelectorForm = document.getElementById('form-selector-form');
+  const selectedForm = document.getElementById('select-form');
+
+  formSelectorForm.addEventListener('submit', e => {
+    formSelectorForm.action = `/form/${selectedForm.value}`;
+  });
+
+  // Tab switching
+  const tabButtons = document.querySelectorAll('.tab-button');
+
+  tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const tab = button.getAttribute('data-tab');
+      const url = new URL(window.location);
+      url.searchParams.set('render', tab);
+      window.location.href = url.toString();
+    });
+  });
+</script>
+
+<style>
+  section {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    border: 1px solid white;
+  }
+
+  .form-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .block-label {
+    display: block;
+  }
+
+  .flex-container {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .flex-item {
+    flex: 1;
+  }
+
+  .flex-center {
+    display: flex;
+    align-items: center;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    color: #111827;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  button:hover {
+    color: rgb(78, 80, 86);
+  }
+
+  button svg {
+    height: 1em;
+    margin-left: 8px;
+  }
+
+  button.button {
+    color: white;
+    background: linear-gradient(83.21deg, #3245ff 0%, #bc52ee 100%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      inset 0 -2px 0 rgba(0, 0, 0, 0.24);
+    border: none;
+    border-radius: 10px;
+  }
+
+  button.button:hover {
+    color: rgb(230, 230, 230);
+    background: linear-gradient(180deg, #3245ff 0%, #bc52ee 80%);
+    box-shadow: none;
+  }
+</style>

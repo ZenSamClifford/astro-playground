@@ -1,0 +1,29 @@
+---
+import RouteLoader from '@contensis/content-resolver/framework/RouteLoader.astro';
+// import ReactRouteLoader from '@contensis/content-resolver/framework/RouteLoader.tsx';
+// import ClientRouteLoader from '@contensis/content-resolver/framework/ClientRouteLoader.tsx';
+// import ClientRouteLoader from '~/components/AppClientRouteLoader';
+import { contentResolver } from '~/contensis.config';
+---
+
+<RouteLoader contentResolver={contentResolver} />
+<!-- <ReactRouteLoader
+  contentResolver={contentResolver}
+  headers={Astro.request.headers}
+  notFound={() => {
+    Astro.response.status = 404;
+    Astro.response.statusText = 'Not found';
+  }}
+  params={{ path: Astro.url.pathname }}
+  searchParams={Object.fromEntries(Astro.url.searchParams.entries())}
+/> -->
+<!-- <ClientRouteLoader
+  client:load
+  headers={Astro.request.headers}
+  notFound={() => {
+    Astro.response.status = 404; 
+    Astro.response.statusText = 'Not found';
+  }}
+  params={{ path: Astro.url.pathname }}
+  searchParams={Object.fromEntries(Astro.url.searchParams.entries())}
+/> -->

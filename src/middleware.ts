@@ -1,0 +1,50 @@
+import { defineMiddleware } from 'astro:middleware';
+import { CONTENSIS_ASSETS_URL } from 'astro:env/server';
+// import { SurrogateTracker } from './contensis/surrogate-keys';
+import { SurrogateTracker } from '@contensis/content-resolver/nodejs';
+import { apiProxy } from './contensis/api-proxy';
+
+// CMS-managed asset paths rendered into canvas/entry content as root-relative
+// urls. In production these are served by Contensis cloud routing before the
+// request reaches the app, so they only need proxying when running locally.
+const cmsAssetPaths = ['/image-library/', '/asset-library/'];
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  if (context.url.pathname.startsWith('/api/')) return next();
+
+  if (
+    CONTENSIS_ASSETS_URL &&
+    cmsAssetPaths.some(path => context.url.pathname.startsWith(path))
+  )
+    return apiProxy(context.request, CONTENSIS_ASSETS_URL);
+
+  return SurrogateTracker.run(async () => {
+    const response = await next();
+
+    // Wait for the response body to fully render
+    // This ensures all child components have finished fetching data
+    const body = await response.text();
+    SurrogateTracker.setCacheKeyHeaders(response.headers);
+    const store = SurrogateTracker.getSurrogateStore();
+    console.info(
+      `[middleware] ${store?.getSurrogateKeys().length} surrogate keys from API calls [${Array.from(
+        store?.apiCalls.values() || []
+      )
+        .map(call => call.surrogateKeys.length)
+        .join(', ')}] in ${context.url.pathname}`
+    );
+
+    // Returning the response here without awaiting the body supports streaming,
+    // but all surrogate keys won't be included until the entire body has rendered,.
+    // By creating a new response after rendering,
+    // we can ensure all surrogate keys are included in the initial response headers.
+    // return response;
+
+    // Create a new response with the rendered body
+    return new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    });
+  });
+});

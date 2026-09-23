@@ -1,0 +1,72 @@
+---
+export const prerender = false;
+
+import background from '~/assets/background.svg';
+import { MgmtApi } from '~/contensis-api';
+import FormSelector from '~/components/Forms/FormSelector.astro';
+import Layout from '~/layouts/Layout.astro';
+
+const { formId: slug } = Astro.params;
+const formId = slug?.split('/')?.[0];
+
+const urlParams = Astro.url.searchParams;
+const { lang, version } = Object.fromEntries(urlParams.entries());
+
+const formContentTypes = await MgmtApi.contentTypes.list().then(list => {
+  return list
+    .filter(ct => (ct.dataFormat as string) === 'form')
+    .sort((a, b) => a.id.localeCompare(b.id));
+});
+
+const selectedForm = formContentTypes.find(
+  f => f.id.toLowerCase() === formId?.toLowerCase()
+);
+
+const pageTitle =
+  selectedForm?.name?.[selectedForm?.defaultLanguage || 'en-GB'] ??
+  'Forms test page';
+---
+
+<Layout pageTitle={pageTitle}>
+  <div id="container">
+    <img id="background" src={background.src} alt="" fetchpriority="high" />
+    <main>
+      <FormSelector
+        forms={formContentTypes}
+        selectedFormId={formId}
+        selectedLanguage={lang}
+        selectedVersion={version}
+      />
+    </main>
+  </div>
+
+  <style>
+    #background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      filter: blur(100px);
+    }
+
+    #container {
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
+        sans-serif;
+      height: 100%;
+    }
+
+    main {
+      height: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-top: 0.25em;
+    }
+  </style>
+</Layout>

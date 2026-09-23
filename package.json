@@ -1,0 +1,26 @@
+{
+  "name": "astro-js-app",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^11.1.6",
+    "@astrojs/react": "^7.0.0",
+    "@contensis/canvas-html": "^1.3.0",
+    "@contensis/content-resolver": "^0.0.1",
+    "@contensis/forms": "^1.0.5",
+    "astro": "^7.3.4",
+    "contensis-delivery-api": "^1.6.2",
+    "contensis-management-api": "^2.4.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.8"
+  }
+}

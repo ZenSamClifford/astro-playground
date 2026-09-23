@@ -1,0 +1,101 @@
+---
+import type { VersionStatus } from 'contensis-core-api';
+import { PUBLIC_ALIAS, PUBLIC_PROJECT } from 'astro:env/client';
+import Form from './Form.client.tsx';
+
+interface Props {
+  renderType: 'esm' | 'react';
+  formId?: string;
+  language?: string;
+  versionStatus?: string;
+}
+
+const { renderType, formId, language, versionStatus } = Astro.props;
+---
+
+{
+  !formId ? (
+    <p>Please select a form to render.</p>
+  ) : (
+    <div>
+      <div class="tabs">
+        <button
+          class="tab-button"
+          data-tab="esm"
+          class:list={[{ active: renderType === 'esm' }]}
+        >
+          ESM
+        </button>
+        <button
+          class="tab-button"
+          data-tab="react"
+          class:list={[{ active: renderType === 'react' }]}
+        >
+          React
+        </button>
+      </div>
+
+      {renderType === 'esm' && (
+        <div id="form-render-esm" class="tab-content">
+          <script
+            type="module"
+            src={`https://cms-${PUBLIC_ALIAS}.cloud.contensis.com/app/ui/forms/forms.js`}
+          />
+
+          <div
+            data-contensis-form-project-id={PUBLIC_PROJECT}
+            data-contensis-form-id={formId}
+            data-contensis-form-language={language}
+            data-contensis-form-version={versionStatus}
+          ></div>
+        </div>
+      )}
+
+      {renderType === 'react' && (
+        <div id="form-render-react" class="tab-content">
+          <Form
+            client:load
+            formId={formId}
+            language={language}
+            versionStatus={versionStatus as VersionStatus}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+<style>
+  .tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .tab-button {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    color: #666;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .tab-button:hover {
+    color: #3245ff;
+    background: rgba(50, 69, 255, 0.05);
+  }
+
+  .tab-button.active {
+    color: #3245ff;
+    border-bottom-color: #3245ff;
+  }
+
+  .tab-content {
+    display: block;
+  }
+</style>

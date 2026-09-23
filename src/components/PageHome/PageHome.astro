@@ -1,0 +1,46 @@
+---
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import Layout from '~/layouts/Layout.astro';
+
+interface PageHomeProps {
+  mappedTitle: string;
+  entryId: string;
+  contentTypeId: string;
+}
+
+interface Props extends ContentTypePageProps<PageHomeProps> {}
+
+const { entry, mappedEntry, node } = Astro.props;
+---
+
+<Layout pageTitle={entry.entryTitle || node.displayName || 'Home'}>
+  <div id="container">
+    <main>
+      <h1>{mappedEntry.mappedTitle}</h1>
+      <p>Content type: {mappedEntry.contentTypeId}</p>
+      <p>
+        Resolved node: {node.id}
+        {node.path}
+      </p>
+      <p>Resolved entry id: {mappedEntry.entryId}</p>
+    </main>
+  </div>
+  <style>
+    #container {
+      font-family:
+        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
+        sans-serif;
+      height: 100%;
+    }
+
+    main {
+      height: 100%;
+      padding: 2em;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-top: 0.25em;
+    }
+  </style>
+</Layout>
