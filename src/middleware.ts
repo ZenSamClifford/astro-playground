@@ -12,6 +12,17 @@ const cmsAssetPaths = ['/image-library/', '/asset-library/'];
 export const onRequest = defineMiddleware(async (context, next) => {
   if (context.url.pathname.startsWith('/api/')) return next();
 
+  // The node adapter serves real files out of dist/client before middleware runs, so
+  // anything under /static/ reaching here is a miss. /static is the block's declared
+  // static path, which skips node lookup and arrives straight at the block, so falling
+  // through would answer a hashed JS request with 200 text/html and fail the module
+  // load with nothing to diagnose from.
+  if (context.url.pathname.startsWith('/static/'))
+    return new Response('Not found\n', {
+      status: 404,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
+
   if (
     CONTENSIS_ASSETS_URL &&
     cmsAssetPaths.some(path => context.url.pathname.startsWith(path))

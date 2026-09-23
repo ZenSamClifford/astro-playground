@@ -11,8 +11,13 @@ const { pageTitle } = Astro.props;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="icon" href="/favicon.ico" />
+    <!--
+      Under /static so the files sit inside the block's declared static path and the
+      Request Handler rewrites these literal strings to the versioned asset prefix.
+      At the repo root they would be served at /, which no site view node resolves.
+    -->
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <link rel="icon" href="/static/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
     <title>{pageTitle ?? 'Astro Basics'}</title>
   </head>

@@ -1,0 +1,11 @@
+{
+  // Included a tsconfig file here to keep VSCode happy because these files are 
+  // excluded from the root tsconfig as we don't want to build them.
+  "extends": "../../tsconfig.json",
+  "include": ["."],
+  "exclude": [],
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx"
+  }
+}

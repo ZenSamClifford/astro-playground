@@ -1,0 +1,26 @@
+---
+import type { RouteLoaderProps } from '../models';
+
+const { contentResolver } = Astro.props as RouteLoaderProps;
+
+const { entryId, nodeId, versionStatus } = Object.fromEntries(
+  Astro.url.searchParams.entries()
+);
+const { headers } = Astro.request;
+const resolve = contentResolver({ headers, versionStatus });
+
+const { component: ContentTypeComponent, ...pageData } = await resolve.page<{
+  mappedTitle: string;
+}>({
+  path: Astro.url.pathname,
+  entryId,
+  nodeId,
+});
+
+if (pageData.isPageNotFound || !ContentTypeComponent) {
+  Astro.response.status = 404;
+  Astro.response.statusText = 'Not found';
+}
+---
+
+{ContentTypeComponent && <ContentTypeComponent resolver={resolve} {...pageData} />}

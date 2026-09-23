@@ -1,0 +1,17 @@
+# .env holds live Contensis credentials and the ghcr package is public.
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+.github
+**/node_modules
+**/dist
+**/.astro
+
+.claude
+.vscode
+.idea
+.DS_Store
+*.log
+*.tgz

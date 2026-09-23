@@ -26,6 +26,18 @@ export default defineConfig({
     mode: 'standalone',
   }),
 
+  build: {
+    // Contensis blocks only serve paths under a declared static path, and `/static`
+    // is the default one injected when a block declares none. The Request Handler
+    // rewrites literal `/static/...` strings in served HTML, JS and CSS to a
+    // `/_{hash}_{blockVersionId}/static/...` prefix, and only the prefixed form
+    // resolves. Astro's default `_astro` directory sits outside that path, so every
+    // bundled asset would 404 once deployed. Renaming it here changes both the
+    // directory under dist/client and the emitted URL. `base` would be wrong: it
+    // prefixes page routes too, and those must stay as node-resolved friendly paths.
+    assets: 'static',
+  },
+
   vite: {
     resolve: {
       alias: {

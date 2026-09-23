@@ -1,0 +1,123 @@
+name: Astro block
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "packages/**"
+      - "astro.config.mjs"
+      - "manifest.json"
+      - "docker/astro.Dockerfile"
+      - ".dockerignore"
+      - ".node-version"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/astro-block.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: astro-block-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Not ghcr.io/${{ github.repository }}: that is ZenSamClifford/astro-playground and
+  # ghcr rejects uppercase in a repository path. Hardcode the lowercase path.
+  IMAGE: ghcr.io/zensamclifford/astro-playground/app
+
+jobs:
+  deploy:
+    name: Build and push astro block
+    # Deviation from the org-wide rule to use [self-hosted, linux]: this is a personal
+    # repo with no access to the Zengenti self-hosted runner pool.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Every one of these is consumed at build time, not runtime: the astro:env ones
+      # are validated and inlined, and CONTENSIS_API_URL is inlined by Vite off
+      # import.meta.env. So the image is specific to one Contensis environment, and a
+      # missing value surfaces either as an astro:env validation failure during the
+      # build or as a 500 on the first page render.
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/astro.Dockerfile
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            PUBLIC_PROJECT=${{ vars.PUBLIC_PROJECT }}
+            PUBLIC_ACCESS_TOKEN=${{ vars.PUBLIC_ACCESS_TOKEN }}
+            PUBLIC_ALIAS=${{ vars.PUBLIC_ALIAS }}
+            CONTENSIS_CMS_URL=${{ vars.CONTENSIS_CMS_URL }}
+            CONTENSIS_API_URL=${{ vars.CONTENSIS_API_URL }}
+          tags: |
+            ${{ env.IMAGE }}:${{ github.ref_name }}-${{ github.run_number }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # contensis/block-push@v1 cannot be used here. It interpolates the raw commit
+      # message into the command string it hands to contensis/cli-action@v1, which ends
+      # in `eval contensis $CONTENSIS_COMMAND` with the variable unquoted. Every
+      # backtick, quote and newline in a commit message is therefore executed by the
+      # shell: framework-sandbox run 34456294182 died on `sh: eval: line 6: syntax
+      # error: unterminated quoted string` on its own commit message.
+      #
+      # So call cli-action directly with metadata that has been through a sanitiser.
+      # This is a command injection next to CONTENSIS_SHARED_SECRET, not just a quoting
+      # bug, and is worth raising upstream.
+      - name: Sanitise commit metadata
+        id: commit
+        env:
+          # Read via the environment, never interpolated into the script body.
+          SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          # Subject line only, then strip everything a shell would interpret.
+          FIRST=${SUBJECT%%$'\n'*}
+          [ -n "$FIRST" ] || FIRST=$(git log -1 --pretty=%s)
+          echo "message=${FIRST//[\`\"\'$\\]/}" >> "$GITHUB_OUTPUT"
+          echo "datetime=$(git log -1 --pretty=%cI)" >> "$GITHUB_OUTPUT"
+          echo "author=$(git log -1 --pretty=%ae)" >> "$GITHUB_OUTPUT"
+          echo "committer=$(git log -1 --pretty=%ce)" >> "$GITHUB_OUTPUT"
+
+      # The block does not need to exist in the CMS beforehand; the push creates it.
+      #
+      # `--release` registers and releases the version. It does not make it live; that
+      # stays a manual CMS action, or --make-live.
+      #
+      # `--repository-url` takes `owner/repo`, not a URL. Under GITHUB_ACTIONS the CLI
+      # prepends `https://github.com/` and appends `.git` itself (dist/commands/push.js),
+      # so passing a full URL as block-push does yields a doubled scheme and dead commit
+      # links in the CMS.
+      - name: Push block to Contensis
+        uses: contensis/cli-action@v1
+        with:
+          alias: prs
+          project-id: tim
+          client-id: ${{ secrets.CONTENSIS_CLIENT_ID }}
+          shared-secret: ${{ secrets.CONTENSIS_SHARED_SECRET }}
+          command: >-
+            push block astro-playground
+            ${{ env.IMAGE }}:${{ github.ref_name }}-${{ github.run_number }}
+            ${{ github.ref_name }} --release
+            --provider Github
+            --repository-url ${{ github.repository }}
+            --commit-id ${{ github.sha }}
+            --commit-message "${{ steps.commit.outputs.message }}"
+            --commit-datetime ${{ steps.commit.outputs.datetime }}
+            --author-email ${{ steps.commit.outputs.author }}
+            --committer-email ${{ steps.commit.outputs.committer }}

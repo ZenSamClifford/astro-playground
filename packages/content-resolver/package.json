@@ -1,0 +1,55 @@
+{
+  "name": "@contensis/content-resolver",
+  "version": "0.0.1",
+  "description": "Contensis content loader and component resolver for modern JavaScript apps",
+  "homepage": "https://github.com/contensis/content-resolver#readme",
+  "bugs": {
+    "url": "https://github.com/contensis/content-resolver/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contensis/content-resolver.git"
+  },
+  "license": "ISC",
+  "author": "Neil Flatley - Zengenti",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node esbuild.config.ts",
+    "build:pack": "npm run build && npm pack",
+    "package-lock": "npm i --package-lock-only --workspaces false"
+  },
+  "peerDependencies": {
+    "contensis-delivery-api": "^1.6.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./framework/*": {
+      "default": "./src/framework/*"
+    },
+    "./nodejs": {
+      "types": "./dist/server/nodejs.d.ts",
+      "default": "./dist/server/nodejs.js"
+    }
+  },
+  "keywords": [
+    "contensis",
+    "contensis-cms",
+    "delivery-api",
+    "headless-cms",
+    "cms",
+    "content-types",
+    "structured-content",
+    "content-resolver",
+    "component-resolver",
+    "component-mapping",
+    "content-rendering",
+    "javascript",
+    "typescript",
+    "ssr",
+    "framework-agnostic"
+  ]
+}
