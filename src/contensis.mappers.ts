@@ -52,3 +52,17 @@ export const homePage = defineMapping<
     };
   },
 });
+
+export const blog = defineMapping<
+  { mappedTitle: string; entryId: string; contentTypeId: string },
+  { title: string }
+>({
+  component: () => import('./components/PageHome/PageHome.astro'),
+  mapper: entry => {
+    return {
+      mappedTitle: entry.title,
+      entryId: entry.sys.id,
+      contentTypeId: entry.sys.contentTypeId,
+    };
+  },
+});
