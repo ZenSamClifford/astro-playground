@@ -21,32 +21,17 @@ const canvasHtml = mappedEntry.canvas?.length
 ---
 
 <Layout pageTitle={entry.entryTitle || node.displayName || 'Content'}>
-  <div id="container">
-    <main>
-      <div class="mb-6 max-w-5xl">
-        <Hero title={mappedEntry.mappedTitle} image={mappedEntry.image} />
-      </div>
-      {
-        canvasHtml && (
-          <div
-            class="canvas-content typeset typeset-article max-w-[37em]"
-            set:html={canvasHtml}
-          />
-        )
-      }
-    </main>
-  </div>
-  <style>
-    #container {
-      font-family:
-        Inter, Roboto, 'Helvetica Neue', 'Arial Nova', 'Nimbus Sans', Arial,
-        sans-serif;
-      height: 100%;
+  <main class="p-8">
+    <div class="mb-6 max-w-5xl">
+      <Hero title={mappedEntry.mappedTitle} image={mappedEntry.image} />
+    </div>
+    {
+      canvasHtml && (
+        <div
+          class="canvas-content typeset typeset-article max-w-[37em]"
+          set:html={canvasHtml}
+        />
+      )
     }
-
-    main {
-      height: 100%;
-      padding: 2em;
-    }
-  </style>
+  </main>
 </Layout>
