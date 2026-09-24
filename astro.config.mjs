@@ -6,6 +6,8 @@ import react from '@astrojs/react';
 
 import node from '@astrojs/node';
 
+import tailwindcss from '@tailwindcss/vite';
+
 // @contensis/forms ships its stylesheet at dist/contensis-forms.css, but its
 // package `exports` field only exposes the `.` entry, so a bare deep import
 // (`@contensis/forms/dist/contensis-forms.css`) is blocked. Resolve the JS
@@ -44,6 +46,8 @@ export default defineConfig({
         '@contensis/forms/styles.css': contensisFormsCss,
       },
     },
+
+    plugins: [tailwindcss()],
   },
 
   env: {
