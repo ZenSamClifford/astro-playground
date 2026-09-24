@@ -1,0 +1,35 @@
+---
+interface Props {
+  title: string;
+  image?: { src: string; alt: string } | null;
+}
+
+const { title, image } = Astro.props;
+---
+
+<section
+  class="relative isolate flex min-h-64 items-end overflow-hidden rounded-lg bg-muted sm:aspect-[12/5] sm:min-h-0"
+>
+  {
+    image && (
+      <img
+        class="absolute inset-0 -z-10 size-full object-cover"
+        src={image.src}
+        alt={image.alt}
+        width="1920"
+        height="800"
+        fetchpriority="high"
+      />
+    )
+  }
+  <div
+    class:list={[
+      'w-full p-6 sm:p-10',
+      image && 'bg-linear-to-t from-black/70 to-transparent text-white',
+    ]}
+  >
+    <h1 class="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
+      {title}
+    </h1>
+  </div>
+</section>
