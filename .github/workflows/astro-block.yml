@@ -2,7 +2,9 @@ name: Astro block
 
 on:
   push:
-    branches: [main]
+    # Every branch, so a PR can be tried as a block before it merges. Each branch
+    # becomes its own block branch in the CMS; only main moves :latest.
+    branches: ["**"]
     paths:
       - "src/**"
       - "public/**"
@@ -46,6 +48,14 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
+      # A branch like fix/foo is a valid block branch but not a valid image tag, which
+      # allows only [A-Za-z0-9_.-]. Swap everything else for a dash.
+      - name: Image tag
+        id: tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: echo "tag=${REF_NAME//[^A-Za-z0-9_.-]/-}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
       # Every one of these is consumed at build time, not runtime: the astro:env ones
       # are validated and inlined, and CONTENSIS_API_URL is inlined by Vite off
       # import.meta.env. So the image is specific to one Contensis environment, and a
@@ -64,9 +74,10 @@ jobs:
             PUBLIC_ALIAS=${{ vars.PUBLIC_ALIAS }}
             CONTENSIS_CMS_URL=${{ vars.CONTENSIS_CMS_URL }}
             CONTENSIS_API_URL=${{ vars.CONTENSIS_API_URL }}
+          # The latest line resolves to empty off main, and empty lines are dropped.
           tags: |
-            ${{ env.IMAGE }}:${{ github.ref_name }}-${{ github.run_number }}
-            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -112,7 +123,7 @@ jobs:
           shared-secret: ${{ secrets.CONTENSIS_SHARED_SECRET }}
           command: >-
             push block astro-playground
-            ${{ env.IMAGE }}:${{ github.ref_name }}-${{ github.run_number }}
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
             ${{ github.ref_name }} --release
             --provider Github
             --repository-url ${{ github.repository }}
