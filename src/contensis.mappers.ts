@@ -66,3 +66,29 @@ export const blog = defineMapping<
     };
   },
 });
+
+export const content = defineMapping<
+  {
+    mappedTitle: string;
+    image: { src: string; alt: string } | null;
+    canvas: Block[];
+  },
+  {
+    title: string;
+    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    canvas: Block[];
+  }
+>({
+  component: () => import('./components/ContentArticle/ContentArticle.astro'),
+  mapper: entry => {
+    // The asset uri already carries the field's crop transformations
+    const imageUri = entry.image?.asset?.sys.uri;
+    return {
+      mappedTitle: entry.title,
+      image: imageUri
+        ? { src: imageUri, alt: entry.image?.altText ?? '' }
+        : null,
+      canvas: entry.canvas,
+    };
+  },
+});

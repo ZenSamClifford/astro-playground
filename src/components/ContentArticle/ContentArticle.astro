@@ -1,0 +1,37 @@
+---
+import { type Block, createRenderer } from '@contensis/canvas-html';
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import Hero from '~/components/Hero/Hero.astro';
+import Layout from '~/layouts/Layout.astro';
+
+interface ContentArticleProps {
+  mappedTitle: string;
+  image: { src: string; alt: string } | null;
+  canvas: Block[];
+}
+
+interface Props extends ContentTypePageProps<ContentArticleProps> {}
+
+const { entry, mappedEntry, node } = Astro.props;
+
+const renderCanvas = createRenderer();
+const canvasHtml = mappedEntry.canvas?.length
+  ? renderCanvas({ data: mappedEntry.canvas })
+  : '';
+---
+
+<Layout pageTitle={entry.entryTitle || node.displayName || 'Content'}>
+  <main class="p-8">
+    <div class="mb-6 max-w-5xl">
+      <Hero title={mappedEntry.mappedTitle} image={mappedEntry.image} />
+    </div>
+    {
+      canvasHtml && (
+        <div
+          class="canvas-content typeset typeset-article max-w-[37em]"
+          set:html={canvasHtml}
+        />
+      )
+    }
+  </main>
+</Layout>
