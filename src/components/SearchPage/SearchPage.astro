@@ -1,0 +1,215 @@
+---
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import { Op, OrderBy, Query } from 'contensis-delivery-api';
+import { SearchIcon, SearchXIcon } from 'lucide-react';
+import { Button, buttonVariants } from '~/components/ui/button';
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from '~/components/ui/empty';
+import { Input } from '~/components/ui/input';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '~/components/ui/pagination';
+import Layout from '~/layouts/Layout.astro';
+import { searchConfig } from '~/search.config';
+import SearchResults from './SearchResults';
+import SearchTypeFilter from './SearchTypeFilter';
+import { allTypes, toSearchType } from './searchTypes';
+
+interface SearchPageProps {
+  mappedTitle: string;
+}
+
+interface Props extends ContentTypePageProps<SearchPageProps> {}
+
+const { entry, mappedEntry, node, resolver } = Astro.props;
+const { pageSize, termMaxLength, searchFields, resultFields, searchTypes } =
+  searchConfig;
+
+const params = Astro.url.searchParams;
+const term = (params.get('term') ?? '').trim().slice(0, termMaxLength);
+const type = toSearchType(params.get('type'));
+const requestedPage = Math.max(
+  1,
+  Number.parseInt(params.get('page') ?? '', 10) || 1
+);
+
+const contentTypeIds =
+  type === allTypes ? searchTypes.map(searchType => searchType.id) : [type];
+
+// A Query object skips the resolver's zenql version handling, so the version
+// status has to be matched here
+const query = new Query(
+  Op.equalTo(
+    'sys.versionStatus',
+    resolver.api.clientConfig.versionStatus || 'published'
+  ),
+  Op.in('sys.contentTypeId', ...contentTypeIds),
+  ...(term
+    ? [Op.or(...searchFields.map(field => Op.freeText(field, term)))]
+    : [])
+);
+// With a term the results come back in relevance order; without one there is
+// no score, so show the newest first
+if (!term) query.orderBy = OrderBy.desc('sys.version.created');
+
+const runSearch = (pageIndex: number) =>
+  resolver.search(query, {
+    pageIndex,
+    pageSize,
+    fields: [...resultFields],
+  });
+
+const trySearch = async (pageIndex: number) => {
+  try {
+    return await runSearch(pageIndex);
+  } catch (error) {
+    console.error('Search failed', error);
+    return null;
+  }
+};
+
+// A failed search shows the empty state rather than failing the whole page.
+// The API rejects a page index far past the end, so retry those from page 1.
+let page = requestedPage;
+let results = await trySearch(page - 1);
+if (!results && page > 1) {
+  page = 1;
+  results = await trySearch(0);
+}
+// A stale link past the last page shows the last page instead of claiming
+// there are no results
+if (results && !results.items.length && results.pageCount > 0) {
+  page = results.pageCount;
+  results = await trySearch(page - 1);
+}
+const items = results?.items ?? [];
+const totalCount = results?.totalCount ?? 0;
+const pageCount = results?.pageCount ?? 0;
+
+const searchHref = (overrides: { page?: number; term?: string }) => {
+  const next = new URLSearchParams();
+  const nextTerm = overrides.term ?? term;
+  if (nextTerm) next.set('term', nextTerm);
+  if (type !== allTypes) next.set('type', type);
+  if (overrides.page && overrides.page > 1)
+    next.set('page', String(overrides.page));
+  const search = next.toString();
+  return search ? `${Astro.url.pathname}?${search}` : Astro.url.pathname;
+};
+
+// First, last and the pages either side of the current one, with null marking
+// a gap where the ellipsis goes
+const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
+  .filter(n => n >= 1 && n <= pageCount)
+  .sort((a, b) => a - b)
+  .flatMap((n, i, shown) => (i > 0 && n - shown[i - 1] > 1 ? [null, n] : [n]));
+---
+
+<Layout pageTitle={entry.entryTitle || node?.displayName || 'Search'}>
+  <main class="max-w-3xl p-8">
+    <h1 class="mb-6 text-3xl font-semibold tracking-tight sm:text-4xl">
+      {mappedEntry.mappedTitle}
+    </h1>
+
+    <form method="get" role="search" class="mb-6 flex flex-col gap-3">
+      <div class="flex gap-2">
+        <label for="search-term" class="sr-only">Search term</label>
+        <Input
+          id="search-term"
+          type="search"
+          name="term"
+          value={term}
+          placeholder="Search content and blogs"
+          maxLength={termMaxLength}
+        />
+        <Button type="submit">
+          <SearchIcon data-icon="inline-start" />
+          Search
+        </Button>
+      </div>
+      <SearchTypeFilter value={type} client:load />
+    </form>
+
+    {
+      items.length > 0 ? (
+        <>
+          <p class="mb-4 text-sm text-muted-foreground" aria-live="polite">
+            {totalCount} {totalCount === 1 ? 'result' : 'results'}
+            {term && ` for '${term}'`}
+          </p>
+          <SearchResults items={items} />
+          {pageCount > 1 && (
+            <Pagination className="mt-6">
+              <PaginationContent>
+                {page > 1 && (
+                  <PaginationItem>
+                    <PaginationPrevious href={searchHref({ page: page - 1 })} />
+                  </PaginationItem>
+                )}
+                {pageNumbers.map(n => (
+                  <PaginationItem>
+                    {n === null ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        href={searchHref({ page: n })}
+                        isActive={n === page}
+                      >
+                        {n}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+                {page < pageCount && (
+                  <PaginationItem>
+                    <PaginationNext href={searchHref({ page: page + 1 })} />
+                  </PaginationItem>
+                )}
+              </PaginationContent>
+            </Pagination>
+          )}
+        </>
+      ) : (
+        <Empty className="border">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <SearchXIcon />
+            </EmptyMedia>
+            <EmptyTitle>
+              {!results
+                ? 'Search is unavailable'
+                : term
+                  ? `No results for '${term}'`
+                  : 'No results'}
+            </EmptyTitle>
+            <EmptyDescription>
+              Try a different term or content type.
+            </EmptyDescription>
+          </EmptyHeader>
+          {term && (
+            <EmptyContent>
+              <a
+                href={searchHref({ term: '' })}
+                class={buttonVariants({ variant: 'outline' })}
+              >
+                Clear search
+              </a>
+            </EmptyContent>
+          )}
+        </Empty>
+      )
+    }
+  </main>
+</Layout>

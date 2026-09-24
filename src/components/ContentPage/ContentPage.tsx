@@ -1,5 +1,5 @@
 import type { ContentTypePageProps } from '@contensis/content-resolver';
-import ClientSearch from '../Search/ClientSearch';
+import ClientSearch from '~/components/deprecated/Search/ClientSearch';
 
 const ContentPage = ({
   contentTypeId,

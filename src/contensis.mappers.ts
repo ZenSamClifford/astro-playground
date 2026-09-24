@@ -92,3 +92,10 @@ export const content = defineMapping<
     };
   },
 });
+
+export const search = defineMapping<{ mappedTitle: string }, { title: string }>(
+  {
+    component: () => import('./components/SearchPage/SearchPage.astro'),
+    mapper: entry => ({ mappedTitle: entry.title }),
+  }
+);
