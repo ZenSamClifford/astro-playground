@@ -3,6 +3,8 @@ import { CONTENSIS_ASSETS_URL } from 'astro:env/server';
 // import { SurrogateTracker } from './contensis/surrogate-keys';
 import { SurrogateTracker } from '@contensis/content-resolver/nodejs';
 import { apiProxy } from './contensis/api-proxy';
+import { loadPrimaryNavigation } from './contensis/primaryNavigation';
+import { contentResolver } from './contensis.config';
 
 // CMS-managed asset paths rendered into canvas/entry content as root-relative
 // urls. In production these are served by Contensis cloud routing before the
@@ -30,13 +32,27 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return apiProxy(context.request, CONTENSIS_ASSETS_URL);
 
   return SurrogateTracker.run(async () => {
+    // Start the Site View fetch now so it runs alongside the page's own lookup;
+    // the Layout awaits it. The resolver's client sends the SSR headers that ask
+    // for surrogate keys, and binding this request's store as the response
+    // handler adds the Site View keys to the page, so a Site View change purges it.
+    const { api } = contentResolver({
+      headers: context.request.headers,
+      versionStatus: context.url.searchParams.get('versionStatus') ?? undefined,
+    });
+    const store = SurrogateTracker.getSurrogateStore();
+    if (store)
+      api.clientConfig.responseHandler = {
+        [200]: store.handleApiResponse.bind(store),
+      };
+    context.locals.primaryNavigation = loadPrimaryNavigation(api);
+
     const response = await next();
 
     // Wait for the response body to fully render
     // This ensures all child components have finished fetching data
     const body = await response.text();
     SurrogateTracker.setCacheKeyHeaders(response.headers);
-    const store = SurrogateTracker.getSurrogateStore();
     console.info(
       `[middleware] ${store?.getSurrogateKeys().length} surrogate keys from API calls [${Array.from(
         store?.apiCalls.values() || []

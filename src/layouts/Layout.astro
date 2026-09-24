@@ -1,11 +1,13 @@
 ---
 import '~/styles/global.css';
+import PrimaryNavigation from '~/components/PrimaryNavigation/PrimaryNavigation';
 
 interface Props {
   pageTitle?: string;
 }
 
 const { pageTitle } = Astro.props;
+const primaryNavigation = await Astro.locals.primaryNavigation;
 ---
 
 <!doctype html>
@@ -24,6 +26,17 @@ const { pageTitle } = Astro.props;
     <title>{pageTitle ?? 'Astro Basics'}</title>
   </head>
   <body>
+    {
+      primaryNavigation && (
+        <header class="border-b px-4 py-2">
+          <PrimaryNavigation
+            client:idle
+            items={primaryNavigation}
+            currentPath={Astro.url.pathname}
+          />
+        </header>
+      )
+    }
     <slot />
   </body>
 </html>
