@@ -2,7 +2,10 @@ import { CONTENSIS_CMS_URL } from 'astro:env/server';
 
 export const apiProxy = async (request: Request, targetUrl?: string) => {
   const { pathname, search } = new URL(request.url);
-  const proxyURL = new URL(`${pathname}${search}`, targetUrl || CONTENSIS_CMS_URL);
+  const proxyURL = new URL(
+    `${pathname}${search}`,
+    targetUrl || CONTENSIS_CMS_URL
+  );
   const proxyRequest = new Request(proxyURL, request);
 
   try {

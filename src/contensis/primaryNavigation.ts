@@ -12,11 +12,13 @@ export type MenuItem = {
  * levels below the root, so this returns the root, its children and theirs. */
 const DEPTH = 2;
 
-const visible = (nodes: Node[] = []) => nodes.filter(node => node.includeInMenu);
+const visible = (nodes: Node[] = []) =>
+  nodes.filter(node => node.includeInMenu);
 
 /** An item earns its place by linking somewhere itself or holding children
  * that do; a Node with neither has nothing to offer the menu. */
-const hasDestination = (item: MenuItem) => item.linkable || item.children.length > 0;
+const hasDestination = (item: MenuItem) =>
+  item.linkable || item.children.length > 0;
 
 const toMenuItem = (node: Node, depth: number): MenuItem => ({
   label: node.displayName,
@@ -35,7 +37,12 @@ const toMenuItem = (node: Node, depth: number): MenuItem => ({
  * so it hides its descendants. */
 export const toPrimaryNavigation = (root: Node): MenuItem[] =>
   [
-    { label: root.displayName, path: '/', linkable: !!root.entry, children: [] },
+    {
+      label: root.displayName,
+      path: '/',
+      linkable: !!root.entry,
+      children: [],
+    },
     ...visible(root.children).map(node => toMenuItem(node, DEPTH)),
   ].filter(hasDestination);
 

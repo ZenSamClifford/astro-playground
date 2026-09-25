@@ -88,8 +88,9 @@ export const contentLoader = ({
 
     if (isSSR) {
       // Dynamic import avoids Node-specific code in client bundle
-      const { SurrogateKeyStore, SurrogateTracker } =
-        await import('./x-surrogate-keys');
+      const { SurrogateKeyStore, SurrogateTracker } = await import(
+        './x-surrogate-keys'
+      );
 
       const keyStore =
         SurrogateTracker.getSurrogateStore() || new SurrogateKeyStore();

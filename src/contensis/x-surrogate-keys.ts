@@ -2,7 +2,6 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 const surrogateKeyStorage = new AsyncLocalStorage<SurrogateKeyStore>();
 
-
 export class SurrogateTracker {
   static run<T>(callback: () => T): T {
     const store = new SurrogateKeyStore();
