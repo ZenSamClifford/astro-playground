@@ -93,6 +93,36 @@ export const content = defineMapping<
   },
 });
 
+export type LandingComposerItem =
+  | { type: 'text'; value: Block[] }
+  | { type: 'quote'; value: { text: string; source: string } };
+
+export const landing = defineMapping<
+  {
+    mappedTitle: string;
+    image: { src: string; alt: string } | null;
+    composer: LandingComposerItem[];
+  },
+  {
+    title: string;
+    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    composer: LandingComposerItem[] | null;
+  }
+>({
+  component: () => import('./components/LandingPage/LandingPage.astro'),
+  mapper: entry => {
+    // The asset uri already carries the field's crop transformations
+    const imageUri = entry.image?.asset?.sys.uri;
+    return {
+      mappedTitle: entry.title,
+      image: imageUri
+        ? { src: imageUri, alt: entry.image?.altText ?? '' }
+        : null,
+      composer: entry.composer ?? [],
+    };
+  },
+});
+
 export const search = defineMapping<{ mappedTitle: string }, { title: string }>(
   {
     component: () => import('./components/SearchPage/SearchPage.astro'),

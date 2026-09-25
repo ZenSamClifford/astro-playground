@@ -43,7 +43,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const store = SurrogateTracker.getSurrogateStore();
     if (store)
       api.clientConfig.responseHandler = {
-        [200]: store.handleApiResponse.bind(store),
+        200: store.handleApiResponse.bind(store),
       };
     context.locals.primaryNavigation = loadPrimaryNavigation(api);
 

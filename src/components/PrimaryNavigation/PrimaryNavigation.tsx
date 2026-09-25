@@ -27,7 +27,8 @@ const panelLinks = (item: MenuItem) =>
 
 const PrimaryNavigation = ({ items, currentPath: rawPath }: Props) => {
   // Node paths carry no trailing slash
-  const currentPath = rawPath.length > 1 ? rawPath.replace(/\/+$/, '') : rawPath;
+  const currentPath =
+    rawPath.length > 1 ? rawPath.replace(/\/+$/, '') : rawPath;
 
   return (
     <NavigationMenu aria-label="Primary" className="max-w-full">
@@ -38,7 +39,9 @@ const PrimaryNavigation = ({ items, currentPath: rawPath }: Props) => {
               <>
                 <NavigationMenuTrigger
                   className="aria-[current=true]:bg-muted/50"
-                  aria-current={isActive(item.path, currentPath) ? 'true' : undefined}
+                  aria-current={
+                    isActive(item.path, currentPath) ? 'true' : undefined
+                  }
                 >
                   {item.label}
                 </NavigationMenuTrigger>

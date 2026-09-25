@@ -5,7 +5,6 @@ const ContentPage = ({
   contentTypeId,
   entry,
   mappedEntry,
-  resolver,
 }: ContentTypePageProps) => {
   // const { items: searchResults } = await resolver.search(
   //   'sys.dataFormat=entry',

@@ -1,6 +1,5 @@
 ---
 import type { ContentType } from 'contensis-core-api';
-import { undefined } from 'astro:schema';
 import FormRender from './FormRender.astro';
 
 interface Props {
@@ -125,7 +124,7 @@ const activeTab =
   const formSelectorForm = document.getElementById('form-selector-form');
   const selectedForm = document.getElementById('select-form');
 
-  formSelectorForm.addEventListener('submit', e => {
+  formSelectorForm.addEventListener('submit', () => {
     formSelectorForm.action = `/form/${selectedForm.value}`;
   });
 

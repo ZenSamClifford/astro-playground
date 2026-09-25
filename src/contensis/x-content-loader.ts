@@ -1,4 +1,4 @@
-import { Query, ZenqlQuery, type VersionStatus } from 'contensis-core-api';
+import { type Query, ZenqlQuery, type VersionStatus } from 'contensis-core-api';
 import { Client } from 'contensis-delivery-api';
 import { PUBLIC_PROJECT, PUBLIC_ACCESS_TOKEN } from 'astro:env/client';
 
@@ -88,15 +88,16 @@ export const contentLoader = ({
 
     if (isSSR) {
       // Dynamic import avoids Node-specific code in client bundle
-      const { SurrogateKeyStore, SurrogateTracker } =
-        await import('./x-surrogate-keys');
+      const { SurrogateKeyStore, SurrogateTracker } = await import(
+        './x-surrogate-keys'
+      );
 
       const keyStore =
         SurrogateTracker.getSurrogateStore() || new SurrogateKeyStore();
 
       if (keyStore) {
         client.clientConfig.responseHandler = {
-          [200]: keyStore.handleApiResponse.bind(keyStore),
+          200: keyStore.handleApiResponse.bind(keyStore),
         };
 
         pageData.getSurrogateKeys = keyStore?.getSurrogateKeys.bind(keyStore);
