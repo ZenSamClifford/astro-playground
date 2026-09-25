@@ -1,0 +1,55 @@
+---
+import { createRenderer } from '@contensis/canvas-html';
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import Hero from '~/components/Hero/Hero.astro';
+import type { LandingComposerItem } from '~/contensis.mappers';
+import Layout from '~/layouts/Layout.astro';
+
+interface LandingPageProps {
+  mappedTitle: string;
+  image: { src: string; alt: string } | null;
+  composer: LandingComposerItem[];
+}
+
+interface Props extends ContentTypePageProps<LandingPageProps> {}
+
+const { entry, mappedEntry, node } = Astro.props;
+
+const renderCanvas = createRenderer();
+---
+
+<Layout pageTitle={entry.entryTitle || node.displayName || 'Landing'}>
+  <main class="p-8">
+    <div class="mb-6 max-w-5xl">
+      <Hero title={mappedEntry.mappedTitle} image={mappedEntry.image} />
+    </div>
+    {
+      mappedEntry.composer.length > 0 && (
+        <div class="canvas-content typeset typeset-article max-w-[37em]">
+          {mappedEntry.composer.map(item => {
+            switch (item.type) {
+              case 'text':
+                return item.value?.length ? (
+                  <Fragment set:html={renderCanvas({ data: item.value })} />
+                ) : null;
+              case 'quote':
+                return item.value?.text ? (
+                  <figure>
+                    <blockquote>
+                      <p>{item.value.text}</p>
+                    </blockquote>
+                    {item.value.source && (
+                      <figcaption>{item.value.source}</figcaption>
+                    )}
+                  </figure>
+                ) : null;
+              default:
+                // Composer types added to the content type later render nothing
+                return null;
+            }
+          })}
+        </div>
+      )
+    }
+  </main>
+</Layout>
