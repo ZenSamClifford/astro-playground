@@ -31,8 +31,8 @@ export const pageContentLoader = (): LiveLoader<
   loadEntry: async () => undefined,
 
   loadCollection: async ({ filter }) => {
-    // Build the resolver per call: `contentResolver` mutates versionStatus on
-    // the shared clientConfig, so a module-scope instance would freeze it.
+    // Build the resolver per call: its client fixes versionStatus when it is
+    // created, so a module-scope instance would freeze it.
     const resolver = contentResolver({ versionStatus: filter?.versionStatus });
 
     const { items } = await resolver.search(
