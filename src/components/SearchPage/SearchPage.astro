@@ -123,24 +123,26 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
       {mappedEntry.mappedTitle}
     </h1>
 
-    <form method="get" role="search" class="mb-6 flex flex-col gap-3">
-      <div class="flex gap-2">
-        <label for="search-term" class="sr-only">Search term</label>
-        <Input
-          id="search-term"
-          type="search"
-          name="term"
-          value={term}
-          placeholder="Search content and blogs"
-          maxLength={termMaxLength}
-        />
-        <Button type="submit">
-          <SearchIcon data-icon="inline-start" />
-          Search
-        </Button>
-      </div>
-      <SearchTypeFilter value={type} client:load />
-    </form>
+    <search class="mb-6">
+      <form method="get" class="flex flex-col gap-3">
+        <div class="flex gap-2">
+          <label for="search-term" class="sr-only">Search term</label>
+          <Input
+            id="search-term"
+            type="search"
+            name="term"
+            value={term}
+            placeholder="Search content and blogs"
+            maxLength={termMaxLength}
+          />
+          <Button type="submit">
+            <SearchIcon data-icon="inline-start" />
+            Search
+          </Button>
+        </div>
+        <SearchTypeFilter value={type} client:load />
+      </form>
+    </search>
 
     {
       items.length > 0 ? (

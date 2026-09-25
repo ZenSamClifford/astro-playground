@@ -1,4 +1,4 @@
-import { Query, ZenqlQuery, type VersionStatus } from 'contensis-core-api';
+import { type Query, ZenqlQuery, type VersionStatus } from 'contensis-core-api';
 import { Client } from 'contensis-delivery-api';
 import { PUBLIC_PROJECT, PUBLIC_ACCESS_TOKEN } from 'astro:env/client';
 
@@ -97,7 +97,7 @@ export const contentLoader = ({
 
       if (keyStore) {
         client.clientConfig.responseHandler = {
-          [200]: keyStore.handleApiResponse.bind(keyStore),
+          200: keyStore.handleApiResponse.bind(keyStore),
         };
 
         pageData.getSurrogateKeys = keyStore?.getSurrogateKeys.bind(keyStore);

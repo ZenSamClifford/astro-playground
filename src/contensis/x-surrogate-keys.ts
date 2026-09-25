@@ -2,16 +2,16 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 const surrogateKeyStorage = new AsyncLocalStorage<SurrogateKeyStore>();
 
-export class SurrogateTracker {
-  static run<T>(callback: () => T): T {
+export const SurrogateTracker = {
+  run<T>(callback: () => T): T {
     const store = new SurrogateKeyStore();
     return surrogateKeyStorage.run(store, callback);
-  }
+  },
 
-  static getSurrogateStore(): SurrogateKeyStore | undefined {
+  getSurrogateStore(): SurrogateKeyStore | undefined {
     return surrogateKeyStorage.getStore();
-  }
-}
+  },
+};
 
 export class SurrogateKeyStore {
   apiCalls: { url: string; statusCode: number; surrogateKeys: string[] }[] = [];
@@ -25,7 +25,7 @@ export class SurrogateKeyStore {
       ? surrogateKeyHeader.split(' ').filter(Boolean)
       : [];
     this.apiCalls.push({ url, statusCode, surrogateKeys });
-    surrogateKeys.forEach(key => this.surrogateKeys.add(key));
+    for (const key of surrogateKeys) this.surrogateKeys.add(key);
   }
 
   getSurrogateKeys(): string[] {

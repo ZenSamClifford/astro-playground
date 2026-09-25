@@ -20,6 +20,7 @@ const { renderType, formId, language, versionStatus } = Astro.props;
     <div>
       <div class="tabs">
         <button
+          type="button"
           class="tab-button"
           data-tab="esm"
           class:list={[{ active: renderType === 'esm' }]}
@@ -27,6 +28,7 @@ const { renderType, formId, language, versionStatus } = Astro.props;
           ESM
         </button>
         <button
+          type="button"
           class="tab-button"
           data-tab="react"
           class:list={[{ active: renderType === 'react' }]}
