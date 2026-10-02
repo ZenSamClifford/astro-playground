@@ -72,11 +72,13 @@ export const content = defineMapping<
     mappedTitle: string;
     image: { src: string; alt: string } | null;
     canvas: Block[];
+    categories: string[];
   },
   {
     title: string;
     image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
     canvas: Block[];
+    categories?: string[];
   }
 >({
   component: () => import('./components/ContentArticle/ContentArticle.astro'),
@@ -89,6 +91,7 @@ export const content = defineMapping<
         ? { src: imageUri, alt: entry.image?.altText ?? '' }
         : null,
       canvas: entry.canvas,
+      categories: entry.categories ?? [],
     };
   },
 });

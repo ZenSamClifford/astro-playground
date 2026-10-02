@@ -1,0 +1,33 @@
+---
+import type { ContentResolver } from '@contensis/content-resolver';
+import { findRelated } from '~/lib/searchQueries';
+import { listings } from '~/search.config';
+
+interface Props {
+  resolver: ContentResolver;
+  entryId: string;
+  categories: string[];
+}
+
+const { resolver, entryId, categories } = Astro.props;
+const items = await findRelated(resolver, { entryId, categories });
+---
+
+{
+  items.length > 0 && (
+    <aside aria-labelledby="related-heading" class="lg:col-start-2 lg:border-l lg:pl-8">
+      <h2 id="related-heading" class="mb-3 text-lg font-semibold">
+        {listings.related.heading}
+      </h2>
+      <ul class="flex flex-col gap-2">
+        {items.map(item => (
+          <li>
+            <a href={item.sys.uri} class="underline-offset-4 hover:underline">
+              {item.entryTitle}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}

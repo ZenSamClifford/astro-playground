@@ -1,6 +1,6 @@
 ---
 import type { ContentTypePageProps } from '@contensis/content-resolver';
-import { Op, OrderBy, Query } from 'contensis-delivery-api';
+import { Op, OrderBy } from 'contensis-delivery-api';
 import { SearchIcon, SearchXIcon } from 'lucide-react';
 import { Button, buttonVariants } from '~/components/ui/button';
 import {
@@ -22,7 +22,8 @@ import {
   PaginationPrevious,
 } from '~/components/ui/pagination';
 import Layout from '~/layouts/Layout.astro';
-import { searchConfig } from '~/search.config';
+import { baseQuery, runQuery } from '~/lib/searchQueries';
+import { search } from '~/search.config';
 import SearchResults from './SearchResults';
 import SearchTypeFilter from './SearchTypeFilter';
 import { allTypes, toSearchType } from './searchTypes';
@@ -34,8 +35,7 @@ interface SearchPageProps {
 interface Props extends ContentTypePageProps<SearchPageProps> {}
 
 const { entry, mappedEntry, node, resolver } = Astro.props;
-const { pageSize, termMaxLength, searchFields, resultFields, searchTypes } =
-  searchConfig;
+const { pageSize, termMaxLength, termFields, fields } = search;
 
 const params = Astro.url.searchParams;
 const term = (params.get('term') ?? '').trim().slice(0, termMaxLength);
@@ -46,39 +46,25 @@ const requestedPage = Math.max(
 );
 
 const contentTypeIds =
-  type === allTypes ? searchTypes.map(searchType => searchType.id) : [type];
+  type === allTypes ? search.contentTypes : [type];
 
-// A Query object skips the resolver's zenql version handling, so the version
-// status has to be matched here
-const query = new Query(
-  Op.equalTo(
-    'sys.versionStatus',
-    resolver.api.clientConfig.versionStatus || 'published'
-  ),
+const query = baseQuery(
+  resolver,
   Op.in('sys.contentTypeId', ...contentTypeIds),
   ...(term
-    ? [Op.or(...searchFields.map(field => Op.freeText(field, term)))]
+    ? [Op.or(...termFields.map(field => Op.freeText(field, term)))]
     : [])
 );
 // With a term the results come back in relevance order; without one there is
 // no score, so show the newest first
 if (!term) query.orderBy = OrderBy.desc('sys.version.created');
 
-const runSearch = (pageIndex: number) =>
-  resolver.search(query, {
+const trySearch = (pageIndex: number) =>
+  runQuery(resolver, query, {
     pageIndex,
     pageSize,
-    fields: [...resultFields],
+    fields: [...fields],
   });
-
-const trySearch = async (pageIndex: number) => {
-  try {
-    return await runSearch(pageIndex);
-  } catch (error) {
-    console.error('Search failed', error);
-    return null;
-  }
-};
 
 // A failed search shows the empty state rather than failing the whole page.
 // The API rejects a page index far past the end, so retry those from page 1.
@@ -105,8 +91,10 @@ const searchHref = (overrides: { page?: number; term?: string }) => {
   if (type !== allTypes) next.set('type', type);
   if (overrides.page && overrides.page > 1)
     next.set('page', String(overrides.page));
-  const search = next.toString();
-  return search ? `${Astro.url.pathname}?${search}` : Astro.url.pathname;
+  const queryString = next.toString();
+  return queryString
+    ? `${Astro.url.pathname}?${queryString}`
+    : Astro.url.pathname;
 };
 
 // First, last and the pages either side of the current one, with null marking

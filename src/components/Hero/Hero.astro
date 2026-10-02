@@ -1,10 +1,13 @@
 ---
+import { Badge } from '~/components/ui/badge';
+
 interface Props {
   title: string;
   image?: { src: string; alt: string } | null;
+  tags?: string[];
 }
 
-const { title, image } = Astro.props;
+const { title, image, tags = [] } = Astro.props;
 ---
 
 <section
@@ -28,6 +31,17 @@ const { title, image } = Astro.props;
       image && 'bg-linear-to-t from-black/70 to-transparent text-white',
     ]}
   >
+    {
+      tags.length > 0 && (
+        <ul class="mb-4 flex flex-wrap gap-2" aria-label="Tags">
+          {tags.map(tag => (
+            <li>
+              <Badge variant="secondary">{tag}</Badge>
+            </li>
+          ))}
+        </ul>
+      )
+    }
     <h1 class="max-w-3xl text-3xl font-semibold tracking-tight sm:text-5xl">
       {title}
     </h1>

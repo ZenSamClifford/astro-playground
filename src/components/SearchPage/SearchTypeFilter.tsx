@@ -1,9 +1,9 @@
 import { useRef } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group';
-import { searchConfig } from '~/search.config';
+import { contentTypes } from '~/search.config';
 import { allTypes, type SearchType } from './searchTypes';
 
-const options = [{ id: allTypes, label: 'All' }, ...searchConfig.searchTypes];
+const options = [{ id: allTypes, label: 'All' }, ...contentTypes];
 
 /**
  * Picks the content type to search and submits the surrounding form, so a new
