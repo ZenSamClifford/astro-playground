@@ -1,6 +1,6 @@
 ---
-import '~/styles/global.css';
-import PrimaryNavigation from '~/components/PrimaryNavigation/PrimaryNavigation';
+import "~/styles/global.css";
+import PrimaryNavigation from "~/components/PrimaryNavigation/PrimaryNavigation";
 
 interface Props {
   pageTitle?: string;
@@ -23,7 +23,7 @@ const primaryNavigation = await Astro.locals.primaryNavigation;
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="icon" href="/static/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <title>{pageTitle ?? 'Astro Basics'}</title>
+    <title>{pageTitle ?? "Astro Basics"}</title>
   </head>
   <body>
     {
