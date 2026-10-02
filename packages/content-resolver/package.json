@@ -16,8 +16,10 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "node esbuild.config.ts",
-    "build:pack": "npm run build && npm pack",
-    "package-lock": "npm i --package-lock-only --workspaces false"
+    "build:pack": "pnpm run build && pnpm pack"
+  },
+  "dependencies": {
+    "contensis-core-api": "^1.2.3"
   },
   "peerDependencies": {
     "contensis-delivery-api": "^1.6.2"

@@ -15,7 +15,8 @@ on:
       - ".dockerignore"
       - ".node-version"
       - "package.json"
-      - "package-lock.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/astro-block.yml"
   workflow_dispatch:
 

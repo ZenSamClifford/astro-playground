@@ -53,7 +53,7 @@ export default defineConfig({
     // every `dependencies` package external, so each one ships whole in the runtime
     // node_modules. lucide-react alone is ~45 MB of icons we use a handful of. Bundling
     // these into the server build tree-shakes them to what is imported, which is why
-    // they live in devDependencies and `npm prune --omit=dev` drops them. Only bundle
+    // they live in devDependencies and `pnpm prune --prod` drops them. Only bundle
     // a package whose own dependencies are also runtime dependencies (cva needs clsx,
     // which astro brings): anything left external but dev-only is pruned, the build
     // still passes, and the server dies with ERR_MODULE_NOT_FOUND. @base-ui/react fails

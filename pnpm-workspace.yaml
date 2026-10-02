@@ -1,0 +1,8 @@
+packages:
+  - "packages/*"
+
+# esbuild's postinstall only validates the binary; the platform package
+# (@esbuild/*) is an optional dependency and works without it. See the
+# note in docker/astro.Dockerfile.
+allowBuilds:
+  esbuild: false

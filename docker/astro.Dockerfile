@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 #
 # The Astro app as a Contensis block. Build context is the repo root: the app lives at
-# the root and packages/content-resolver is an npm workspace member, so npm needs both
-# manifests and the lockfile.
+# the root and packages/content-resolver is a pnpm workspace member, so pnpm needs both
+# manifests, the workspace file and the lockfile.
 
 # --- build stage ---
 # Node 24 rather than 20: packages/content-resolver builds with `node esbuild.config.ts`,
@@ -11,10 +11,14 @@ FROM node:24-bookworm-slim AS build
 WORKDIR /app
 
 # Manifests first so the install layer caches across source changes.
-COPY package.json package-lock.json ./
+# pnpm comes from the packageManager field in package.json, via corepack.
+RUN corepack enable
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/content-resolver/package.json ./packages/content-resolver/
 
-# --ignore-scripts is load-bearing, not caution. The root devDependency esbuild@0.27.x
+# --ignore-scripts is load-bearing, not caution (pnpm-workspace.yaml also disables the
+# esbuild build script via allowBuilds). The root devDependency esbuild@0.27.x
 # hoists its bin shim to node_modules/.bin/esbuild, and the copy nested under vite runs
 # a postinstall that validates the version through that shim:
 #   Error: Expected "0.25.12" but got "0.27.4"
@@ -22,7 +26,7 @@ COPY packages/content-resolver/package.json ./packages/content-resolver/
 # (@esbuild/linux-x64), so the JS API both builds here use resolves it without that
 # script ever running. A clean install in an empty tree is what exposes this; locally it
 # is masked by an already-populated node_modules.
-RUN npm ci --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
@@ -48,11 +52,12 @@ ENV PUBLIC_PROJECT=$PUBLIC_PROJECT \
 
 # The root build script builds the package first: the app imports `.` and `/nodejs`,
 # which map to dist, alongside `./framework/*`, which maps to raw src.
-RUN npm run build
+RUN pnpm run build
 
 # The standalone adapter leaves dependencies external, so the runtime needs a real
-# node_modules. Prune on the root tree, which is where npm workspaces hoists to.
-RUN npm prune --omit=dev
+# node_modules. Prune on the root tree. pnpm keeps real packages in
+# node_modules/.pnpm and symlinks them, so the whole node_modules dir is copied below.
+RUN pnpm prune --prod
 
 # --- runtime stage ---
 FROM node:24-bookworm-slim AS runtime
