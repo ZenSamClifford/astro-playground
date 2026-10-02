@@ -96,6 +96,38 @@ export const content = defineMapping<
   },
 });
 
+export const form = defineMapping<
+  {
+    mappedTitle: string;
+    description: string | null;
+    image: { src: string; alt: string } | null;
+    categories: string[];
+    formId: string | null;
+  },
+  {
+    title: string;
+    description?: string;
+    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    categories?: string[];
+    form?: { id?: string; sys?: { id?: string } } | null;
+  }
+>({
+  component: () => import('./components/FormPage/FormPage.astro'),
+  mapper: entry => {
+    const imageUri = entry.image?.asset?.sys.uri;
+    return {
+      mappedTitle: entry.title,
+      description: entry.description ?? null,
+      image: imageUri
+        ? { src: imageUri, alt: entry.image?.altText ?? '' }
+        : null,
+      categories: entry.categories ?? [],
+      // A content type picker value: the id of the form content type
+      formId: entry.form?.sys?.id ?? entry.form?.id ?? null,
+    };
+  },
+});
+
 export type LandingComposerItem =
   | { type: 'text'; value: Block[] }
   | { type: 'quote'; value: { text: string; source: string } };

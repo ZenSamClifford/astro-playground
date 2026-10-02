@@ -1,0 +1,50 @@
+---
+import type { ContentTypePageProps } from '@contensis/content-resolver';
+import '@contensis/forms/styles.css';
+import Form from '~/components/Forms/Form.client.tsx';
+import Hero from '~/components/Hero/Hero.astro';
+import Layout from '~/layouts/Layout.astro';
+
+interface FormPageProps {
+  mappedTitle: string;
+  description: string | null;
+  image: { src: string; alt: string } | null;
+  categories: string[];
+  formId: string | null;
+}
+
+interface Props extends ContentTypePageProps<FormPageProps> {}
+
+const { entry, mappedEntry, node, resolver } = Astro.props;
+const { versionStatus } = resolver.api.clientConfig;
+---
+
+<Layout pageTitle={entry.entryTitle || node.displayName || 'Form'}>
+  <main class="p-8">
+    <div class="mb-6 max-w-5xl">
+      <Hero
+        title={mappedEntry.mappedTitle}
+        image={mappedEntry.image}
+        tags={mappedEntry.categories}
+      />
+    </div>
+    <div class="contensis-form-scope max-w-[37em]">
+      {
+        mappedEntry.description && (
+          <p class="mb-6 text-lg">{mappedEntry.description}</p>
+        )
+      }
+      {
+        mappedEntry.formId ? (
+          <Form
+            client:load
+            formId={mappedEntry.formId}
+            versionStatus={versionStatus}
+          />
+        ) : (
+          <p>No form has been selected for this page.</p>
+        )
+      }
+    </div>
+  </main>
+</Layout>

@@ -30,6 +30,7 @@ This is a pnpm workspace. The Astro app lives at the root and the shared content
 │   ├── components/
 │   │   ├── ContentArticle/
 │   │   ├── ContentPage/
+│   │   ├── FormPage/              # Form content type template
 │   │   ├── Forms/                 # Form selector and renderer
 │   │   ├── Hero/
 │   │   ├── LandingPage/           # Composer landing page template

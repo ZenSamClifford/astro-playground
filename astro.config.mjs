@@ -19,6 +19,25 @@ const contensisFormsCss = path.join(
   'contensis-forms.css'
 );
 
+// The stylesheet is written for a standalone form page: it resets `*`, `html`,
+// `body`, `img`, `p` and form controls, and declares its variables on `:root`.
+// Imported as is, it restyles the whole site. Wrapping it in `@scope` limits every
+// rule to descendants of `.contensis-form-scope`, so the `html` and `body` rules
+// match nothing, and `:root` becomes `:scope` to keep the variables on the wrapper.
+function scopeContensisFormsCss() {
+  return {
+    name: 'scope-contensis-forms-css',
+    enforce: 'pre',
+    transform(code, id) {
+      if (id.split('?')[0] !== contensisFormsCss) return null;
+      return {
+        code: `@scope (.contensis-form-scope) {\n${code.replace(':root', ':scope')}\n}`,
+        map: null,
+      };
+    },
+  };
+}
+
 // https://astro.build/config
 export default defineConfig({
   integrations: [react()],
@@ -47,7 +66,7 @@ export default defineConfig({
       },
     },
 
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), scopeContensisFormsCss()],
 
     // Contensis blocks reject images over 512 MB, and the standalone adapter leaves
     // every `dependencies` package external, so each one ships whole in the runtime
