@@ -45,7 +45,7 @@ describe('createCanvasRenderer images', () => {
     assert.deepEqual(descriptors(html), FULL);
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /dimensions unavailable/);
-    assert.equal(attr(html, 'loading'), 'lazy');
+    assert.equal(attr(html, 'loading'), undefined);
     assert.equal(attr(html, 'decoding'), 'async');
     assert.equal(attr(html, 'sizes'), '(min-width: 768px) 50vw, 100vw');
     assert.equal(
@@ -63,6 +63,7 @@ describe('createCanvasRenderer images', () => {
     assert.match(urls(html)[2], /width=1024&amp;/);
     assert.equal(attr(html, 'width'), '900');
     assert.equal(attr(html, 'height'), '600');
+    assert.equal(attr(html, 'loading'), 'lazy');
     assert.deepEqual(warnings, []);
   });
   it('size-only (450x300) keeps w/h and is capped at 450w', () => {
@@ -74,6 +75,7 @@ describe('createCanvasRenderer images', () => {
     );
     assert.equal(attr(html, 'width'), '450');
     assert.equal(attr(html, 'height'), '300');
+    assert.equal(attr(html, 'loading'), 'lazy');
     assert.deepEqual(warnings, []);
   });
   it('crop-only (400x300) keeps the crop', () => {
@@ -85,6 +87,7 @@ describe('createCanvasRenderer images', () => {
     );
     assert.equal(attr(html, 'width'), '400');
     assert.equal(attr(html, 'height'), '300');
+    assert.equal(attr(html, 'loading'), 'lazy');
   });
   it('size plus crop (300x300) keeps the whole query, in fixed order', () => {
     const { html } = render(block(ld0, 'zzimg004'));
@@ -94,6 +97,7 @@ describe('createCanvasRenderer images', () => {
     );
     assert.equal(attr(html, 'width'), '300');
     assert.equal(attr(html, 'height'), '300');
+    assert.equal(attr(html, 'loading'), 'lazy');
   });
   it('every variant URL keeps stored w/h/crop and appends width, format, quality in order', () => {
     for (const id of ['zzimg002', 'zzimg003', 'zzimg004']) {
@@ -146,6 +150,22 @@ describe('createCanvasRenderer images', () => {
   it('svg output equals the stock renderer', () => {
     const b = block(ld0, 'zzimg008');
     assert.equal(render(b).html, createRenderer()({ data: [b] }));
+  });
+  it('bare images stay eager and keep decoding async at either linkDepth 0 image type', () => {
+    for (const id of [
+      'zzimg001',
+      'zzimg005',
+      'zzimg006',
+      'zzimg007',
+      'zzimg011',
+    ]) {
+      const { html } = render(block(ld0, id));
+      assert.equal(attr(html, 'loading'), undefined);
+      assert.equal(attr(html, 'decoding'), 'async');
+      assert.equal(attr(html, 'width'), undefined);
+    }
+    for (const id of ['zzimg005', 'zzimg006', 'zzimg007', 'zzimg011'])
+      assert.equal(attr(render(block(ld1, id)).html, 'loading'), 'lazy');
   });
   it('a caption gives figure and figcaption and no title attribute', () => {
     const { html } = render(block(ld1, 'zzimg009'));

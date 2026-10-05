@@ -160,7 +160,7 @@ What each image becomes:
 
 - `src` is a 768 variant (capped by the displayed width when known), `srcset` is one WebP variant per allowed width, built by the same `srcSetEntries` helper the service uses, so descriptors are capped at the real displayed width and never duplicated.
 - The variant URLs keep the stored `w`, `h` and `crop` and append `width`, `format` and `quality` (the same rule as the Hero).
-- `loading="lazy"` and `decoding="async"` always. No `fetchpriority`.
+- `decoding="async"` always, and `loading="lazy"` only when `width` and `height` are known. A bare image at `linkDepth` 0 has no intrinsic size, so it gets no `loading` attribute and stays eager (the browser default): a lazy image with no reserved box pushes content down when it loads. Measured on the branch preview at a 500px viewport with 7 bare images: CLS 0.2355 with lazy bare images against 0 on the old build, which was eager. They stay eager until dimensions are available at `linkDepth` 0 (a product dev ask). No `fetchpriority`.
 - `width` and `height` only when the displayed size is known (crop, then `w`/`h`, then `sys.properties`). Otherwise they are left out and a dev warning is logged. Nothing is guessed.
 - `alt` is always written, as `alt=""` when empty. Attribute values are HTML-escaped, so `&` in a URL becomes `&amp;`.
 - A caption becomes `<figure>` plus `<figcaption>`. The stock renderer also copied the caption into a `title` attribute; that duplicate is dropped.
@@ -297,7 +297,7 @@ The real comparisons sit at 3 to 5 and the wrong-region controls at about 45, so
 pnpm test
 ```
 
-That runs `node --test src/lib/*.test.ts` (87 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes), and the canvas renderer (`canvasRenderer.test.ts`, rendering real delivery blocks kept in `src/lib/fixtures/`).
+That runs `node --test src/lib/*.test.ts` (88 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes), and the canvas renderer (`canvasRenderer.test.ts`, rendering real delivery blocks kept in `src/lib/fixtures/`).
 
 `testImage` scenarios checked against real entries at `linkDepth` 0 and 1 (the `zz-test` entries):
 

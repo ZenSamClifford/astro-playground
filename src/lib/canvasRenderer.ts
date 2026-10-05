@@ -34,7 +34,7 @@ const FALLBACK_WIDTH = 768;
 
 /**
  * A canvas renderer whose images use the same Contensis Image API variants as the Hero:
- * WebP `srcset` over the fixed widths, w/h/crop kept, lazy loading. Everything else is the
+ * WebP `srcset` over the fixed widths, w/h/crop kept. Everything else is the
  * stock @contensis/canvas-html output. SVG, and images with no uri, are not transformed.
  * Width and height are only emitted when the displayed size is known (crop, w/h, or
  * sys.properties at linkDepth 1); a bare image at linkDepth 0 has none and can shift layout.
@@ -94,7 +94,10 @@ export const createCanvasRenderer = (options: CanvasRendererOptions = {}) => {
             sizes: escapeAttr(sizes),
             width: dims?.width,
             height: dims?.height,
-            loading: 'lazy',
+            // Lazy only with a reserved box: a lazy image without width and height
+            // pushes content down when it loads (measured CLS 0.2355 vs 0), so those stay
+            // eager (the browser default).
+            loading: dims ? 'lazy' : undefined,
             decoding: 'async',
           });
         }
