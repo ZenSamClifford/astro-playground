@@ -1,0 +1,56 @@
+---
+import { imageConfig } from 'astro:assets';
+import type { HTMLAttributes } from 'astro/types';
+import type { MappedImage } from '~/lib/contensisImage';
+import { resolveImageOptions } from '~/lib/contensisImageOptions';
+import { buildImageAttributes } from '~/lib/imageAttributes';
+import { type ImageSizesPreset, resolveSizes } from '~/lib/imageSizes';
+
+interface Props
+  extends Omit<
+    HTMLAttributes<'img'>,
+    | 'src'
+    | 'alt'
+    | 'width'
+    | 'height'
+    | 'sizes'
+    | 'srcset'
+    | 'loading'
+    | 'decoding'
+    | 'fetchpriority'
+  > {
+  /** The mapped image field (src, alt, and displayed width/height when known). */
+  image: MappedImage | null | undefined;
+  /** A preset name from src/lib/imageSizes.ts, or a raw `sizes` string. */
+  sizes?: ImageSizesPreset | (string & {});
+  /** Above the fold: loading="eager" and fetchpriority="high". */
+  priority?: boolean;
+  /** Used only when the image has no dimensions of its own, e.g. a fixed-ratio box. */
+  fallbackSize?: { width: number; height: number };
+}
+
+const { image, sizes, priority, fallbackSize, ...rest } = Astro.props;
+
+const attributes = image
+  ? buildImageAttributes(
+      { ...image, sizes: resolveSizes(sizes), priority, fallbackSize },
+      {
+        options: resolveImageOptions(imageConfig.service.config),
+        isDev: import.meta.env.DEV,
+        logger: console,
+      }
+    )
+  : null;
+
+if (
+  import.meta.env.DEV &&
+  attributes &&
+  attributes.srcset !== undefined &&
+  !attributes.width
+)
+  console.warn(
+    `[ImageContensis] ${image?.src} has no dimensions and no fallbackSize; it will render without width and height`
+  );
+---
+
+{attributes && <img {...attributes} alt={attributes.alt} {...rest} />}

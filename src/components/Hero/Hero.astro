@@ -1,5 +1,5 @@
 ---
-import { Image } from 'astro:assets';
+import ImageContensis from '~/components/ImageContensis/ImageContensis.astro';
 import { Badge } from '~/components/ui/badge';
 import type { MappedImage } from '~/lib/contensisImage';
 
@@ -10,35 +10,19 @@ interface Props {
 }
 
 const { title, image, tags = [] } = Astro.props;
-
-// `sizes` mirrors the page layout: the templates wrap the Hero in `main.p-8` (2rem each
-// side) and `div.max-w-5xl` (64rem = 1024px), so it is 100vw - 4rem until the viewport
-// reaches 1024px + 4rem = 1088px, then fixed at 1024px. Update both together with the
-// layout (LandingPage, ContentArticle, FormPage).
-const heroSizes = '(min-width: 1088px) 1024px, calc(100vw - 4rem)';
-// Dimensions are missing only when mapImage could not resolve them (it already warns in dev).
-const [width, height] =
-  image?.width && image?.height ? [image.width, image.height] : [1920, 800];
+// The section is a fixed 12/5 box, hence the 1920x800 fallback size for images without one.
 ---
 
 <section
   class="relative isolate flex min-h-64 items-end overflow-hidden rounded-lg bg-muted sm:aspect-[12/5] sm:min-h-0"
 >
-  {
-    image && (
-      <Image
-        class="absolute inset-0 -z-10 size-full object-cover"
-        src={image.src}
-        alt={image.alt}
-        width={width}
-        height={height}
-        sizes={heroSizes}
-        fetchpriority="high"
-        loading="eager"
-        decoding="async"
-      />
-    )
-  }
+  <ImageContensis
+    class="absolute inset-0 -z-10 size-full object-cover"
+    image={image}
+    sizes="hero"
+    priority
+    fallbackSize={{ width: 1920, height: 800 }}
+  />
   <div
     class:list={[
       'w-full p-6 sm:p-10',

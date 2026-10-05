@@ -1,23 +1,23 @@
 import { createRenderer, image } from '@contensis/canvas-html';
 import {
-  buildVariantUrl,
-  clampWidth,
   getDisplayDimensions,
   type ImageFieldValue,
   isSvg,
-  srcSetEntries,
 } from './contensisImage.ts';
 import {
   type ImageOptions,
   resolveImageOptions,
 } from './contensisImageOptions.ts';
+import { buildImageAttributes } from './imageAttributes.ts';
+import { type ImageSizesPreset, resolveSizes } from './imageSizes.ts';
 
 export interface CanvasRendererOptions {
   /**
    * The `sizes` attribute for every canvas image. The default assumes nothing about the
-   * layout: full width on narrow screens, half width from 768px up.
+   * layout: full width on narrow screens, half width from 768px up. A preset name from
+   * imageSizes.ts or a raw sizes string.
    */
-  sizes?: string;
+  sizes?: ImageSizesPreset | (string & {});
   /** Overrides over the image defaults; pass `imageConfig.service.config` from Astro. */
   imageOptions?: Partial<ImageOptions>;
   /** Dev only: warn when an image has no known dimensions. */
@@ -29,22 +29,16 @@ export interface CanvasRendererOptions {
 const escapeAttr = (value: string): string =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-// Width of the plain `src` fallback, used by browsers without srcset support.
-const FALLBACK_WIDTH = 768;
-
 /**
  * A canvas renderer whose images use the same Contensis Image API variants as the Hero:
- * WebP `srcset` over the fixed widths, w/h/crop kept. Everything else is the
- * stock @contensis/canvas-html output. SVG, and images with no uri, are not transformed.
+ * the shared rules in imageAttributes.ts. Everything else is the stock
+ * @contensis/canvas-html output. SVG, and images with no uri, are not transformed.
  * Width and height are only emitted when the displayed size is known (crop, w/h, or
  * sys.properties at linkDepth 1); a bare image at linkDepth 0 has none and can shift layout.
  */
 export const createCanvasRenderer = (options: CanvasRendererOptions = {}) => {
-  const {
-    sizes = '(min-width: 768px) 50vw, 100vw',
-    isDev = false,
-    onWarn,
-  } = options;
+  const { isDev = false, onWarn } = options;
+  const sizes = resolveSizes(options.sizes);
   const o = resolveImageOptions(options.imageOptions);
   const context = {
     isDev,
@@ -81,24 +75,21 @@ export const createCanvasRenderer = (options: CanvasRendererOptions = {}) => {
             value as ImageFieldValue,
             isDev ? onWarn : undefined
           );
-          const url = (width: number) =>
-            escapeAttr(buildVariantUrl(uri, { width }, context));
+          const a = buildImageAttributes(
+            { src: uri, alt: value?.altText, ...dims, sizes },
+            context
+          );
           img = image({
             ...props,
-            src: url(clampWidth(FALLBACK_WIDTH, dims?.width, o)),
-            alt,
+            src: escapeAttr(a.src),
+            alt: escapeAttr(a.alt),
             title: undefined,
-            srcset: srcSetEntries(dims?.width, o)
-              .map(e => `${url(e.width)} ${e.descriptor}`)
-              .join(', '),
-            sizes: escapeAttr(sizes),
-            width: dims?.width,
-            height: dims?.height,
-            // Lazy only with a reserved box: a lazy image without width and height
-            // pushes content down when it loads (measured CLS 0.2355 vs 0), so those stay
-            // eager (the browser default).
-            loading: dims ? 'lazy' : undefined,
-            decoding: 'async',
+            srcset: escapeAttr(a.srcset ?? ''),
+            sizes: escapeAttr(a.sizes ?? ''),
+            width: a.width,
+            height: a.height,
+            loading: a.loading,
+            decoding: a.decoding,
           });
         }
         return caption

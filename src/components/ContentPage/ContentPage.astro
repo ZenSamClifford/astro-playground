@@ -15,9 +15,7 @@ interface Props extends ContentTypePageProps<ContentPageProps> {}
 
 const { contentTypeId, entry, mappedEntry, node, resolver } = Astro.props;
 
-// `sizes` mirrors the layout: `main` has 2em (32px) padding and no max width, so canvas
-// content is the viewport minus 4rem wide. Update together with the layout.
-const renderCanvas = createAstroCanvasRenderer({ sizes: 'calc(100vw - 4rem)' });
+const renderCanvas = createAstroCanvasRenderer({ sizes: 'page' });
 const canvasHtml = mappedEntry.canvas
   ? renderCanvas({ data: mappedEntry.canvas })
   : '';

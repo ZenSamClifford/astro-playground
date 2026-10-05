@@ -17,9 +17,9 @@ entry image field
   -> mapImage()                 src/contensis.mappers.ts
        getDisplayDimensions()   src/lib/contensisImage.ts   (crop, w/h, properties)
   -> { src, alt, width, height }
-  -> <Image> in Hero.astro      width/height, sizes mirrors the layout
-  -> service.getSrcSet()        one variant per allowed width
-  -> service.getURL()           clampWidth() then buildVariantUrl()
+  -> <ImageContensis> (Hero)    buildImageAttributes() in src/lib/imageAttributes.ts
+       srcSetEntries()          one variant per allowed width
+       buildVariantUrl()        w/h/crop kept, width/format/quality appended
   -> /image-library/x.jpeg?w=1920&h=1235&crop=1920,800,0,218&width=768&format=webp&quality=75
 ```
 
@@ -27,7 +27,7 @@ Step by step:
 
 1. `sys.uri` on the asset already carries the editor's transformations, for example `?w=1920&h=1235&crop=1920,800,0,218`.
 2. `mapImage` (in `contensis.mappers.ts`, used by `content`, `landing` and `form`) takes the field and returns `{ src, alt, width, height }`. `width` and `height` are the displayed size from `getDisplayDimensions` (section 4). An empty field maps to `null`.
-3. `Hero.astro` renders `<Image>` with those dimensions, `sizes="(min-width: 1088px) 1024px, calc(100vw - 4rem)"`, `fetchpriority="high"` and `loading="eager"`. The service returns an SVG `src` unchanged from `getURL()` as a safety net, since the API ignores `w`, `h` and `crop` for SVG.
+3. `Hero.astro` is a thin wrapper around `ImageContensis` (see "ImageContensis" below): `sizes="hero"`, `priority` and a 1920x800 `fallbackSize`. The image service (`getSrcSet()`, `getURL()`) stays registered for any other `<Image>` use, and returns an SVG `src` unchanged from `getURL()` as a safety net, since the API ignores `w`, `h` and `crop` for SVG.
 4. Astro does not build a `srcset` for external services itself, so the service implements `getSrcSet()`. It clamps each requested width to the allowed set (capped at the displayed width) and drops duplicates. The descriptor uses the true displayed size, so a 1000x400 crop gives `480w, 768w, 1000w` (the 1000w entry points at the 1024 URL, which the API serves at 1000 because it never upscales).
 5. `getURL()` snaps the width with `clampWidth` and calls `buildVariantUrl()`.
 
@@ -109,9 +109,9 @@ Copy these, keeping the relative imports working:
 1. `src/lib/contensisImageOptions.ts`
 2. `src/lib/contensisImage.ts`
 3. `src/lib/contensisImageService.ts`
-4. the three test files (`contensisImage.test.ts`, `contensisImageOptions.test.ts`, `contensisImageService.test.ts`) and the `test` script
+4. the three test files (`contensisImage.test.ts`, `contensisImageOptions.test.ts`, `contensisImageService.test.ts`, `imageAttributes.test.ts`) and the `test` script
 5. the `mapImage` helper from `src/contensis.mappers.ts`, and use it for every image field you map
-6. the `<Image>` usage from `src/components/Hero/Hero.astro`
+6. the `ImageContensis` component, `imageAttributes.ts` and `imageSizes.ts`, and `Hero.astro` as a usage example
 7. the `image.service` block above in `astro.config.mjs`, with your own values in `config`
 
 What we found on Astro 7 (7.3.4):
@@ -143,6 +143,47 @@ Verified shapes:
 
 We did not change `linkDepth`. To be raised with product dev separately.
 
+## ImageContensis
+
+`src/components/ImageContensis/ImageContensis.astro` owns the image rules so a consumer cannot get them wrong. It takes a mapped image field and renders one `<img>`.
+
+| Prop | Type | Notes |
+|---|---|---|
+| `image` | `MappedImage \| null \| undefined` | `{ src, alt, width?, height? }` from `mapImage`. Renders nothing when null or undefined. |
+| `sizes` | preset name or string | A name from `src/lib/imageSizes.ts` (`hero`, `article`, `page`) or a raw `sizes` string. Default `(min-width: 768px) 50vw, 100vw`. |
+| `priority` | `boolean` | Above the fold: `loading="eager"` and `fetchpriority="high"`, and `src` is the largest variant. |
+| `fallbackSize` | `{ width, height }` | Used only when the image has no dimensions, e.g. the Hero passes 1920x800 because its section is a fixed 12/5 box. Without it, an image of unknown size renders without `width` and `height`, and a dev warning says so. |
+| `class` and other `<img>` attributes | `HTMLAttributes<'img'>` | Passed through. `src`, `alt`, `width`, `height`, `sizes`, `srcset`, `loading`, `decoding` and `fetchpriority` are owned by the component. |
+
+Rules it applies (in `buildImageAttributes`, `src/lib/imageAttributes.ts`, shared with the canvas renderer):
+
+- WebP `srcset` over the configured widths, capped at the displayed width, with the stored `w`, `h` and `crop` kept in every URL.
+- `width` and `height` from the image, else `fallbackSize`, else omitted.
+- `loading="lazy"` only when a size is known (a lazy image with no reserved box causes layout shift); otherwise no `loading` attribute, so it stays eager. `priority` forces eager plus `fetchpriority="high"`.
+- `decoding="async"` on transformed images, and `alt` always written (`alt=""` when empty).
+- An SVG renders a plain `<img>` with `src`, `alt` and `class` only.
+
+One code path: the component renders a plain `<img>` from `buildImageAttributes` rather than Astro's `<Image>`. `<Image>` would only call our service, which calls the same helpers, and it would put a second implementation of the rules (and its own attribute handling) between the component and the output. The canvas renderer calls the same function and escapes the values for its HTML string.
+
+```astro
+---
+import ImageContensis from '~/components/ImageContensis/ImageContensis.astro';
+---
+<!-- a structured image field, mapped with mapImage -->
+<ImageContensis image={mappedEntry.image} sizes="article" class="rounded-lg" />
+
+<!-- the Hero: above the fold, in a fixed-ratio box -->
+<ImageContensis
+  class="absolute inset-0 -z-10 size-full object-cover"
+  image={image}
+  sizes="hero"
+  priority
+  fallbackSize={{ width: 1920, height: 800 }}
+/>
+```
+
+Use `ImageContensis` for an image field you render yourself. Use `createAstroCanvasRenderer` for images inside Canvas (rich text) content: it applies the same rules to the `_image` blocks.
+
 ## Canvas images
 
 Canvas image blocks are `{ id, type: '_image', value: { altText, caption?, asset, transformations } }`. Delivery returns `transformations` as a query-style string (`w=450&h=300`, `crop=400,300,100,50`, `w=600&h=400&crop=300,300,10,20`) or `null`, and `asset.sys.uri` carries the same query. So `getDisplayDimensions` works unchanged on the block value. At `linkDepth` 0 the asset has only `sys.uri`; at `linkDepth` 1 it also has `sys.properties.width/height` (SVG reports 0x0).
@@ -169,7 +210,7 @@ What each image becomes:
 
 Known consequence: a bare image (no crop, no size) at `linkDepth` 0 has no dimensions, so it has no `width`/`height` and can cause layout shift while loading. Raising `linkDepth` for the canvas field fixes it (properties then exist), at the cost of a larger response. We did not change `linkDepth`.
 
-Choosing `sizes`: the default is `(min-width: 768px) 50vw, 100vw`. The call sites pass values taken from their real layout, and the comment next to each names the layout values it mirrors, so change them together:
+Choosing `sizes`: the default is `(min-width: 768px) 50vw, 100vw`. The call sites pass the named presets in `src/lib/imageSizes.ts` (`article` for `ContentArticle` and `LandingPage`, `page` for `ContentPage`), whose comment block names the layout classes each mirrors, so change them together:
 
 | Call site | `sizes` | Why |
 |---|---|---|
@@ -180,7 +221,7 @@ Measured in Chrome on a production build: the prose column is 592px at 1440, 900
 
 Why not a plain `50vw`: a phone, where the image usually fills the column, would ask for about half the pixels it needs. For a 900x600 image at `linkDepth` 1 (srcset 480w, 768w, 900w), a 390px viewport at DPR 3 needs 1170 pixels and picks 900w (the largest) with `100vw` below 768px, but needs only 585 and picks 768w under a plain `50vw`. A 1440px viewport at DPR 1 picks 768w under the default (needs 720).
 
-Copy checklist for another project: `canvasRenderer.ts` and its test with `src/lib/fixtures/`, `canvasRendererAstro.ts`, the shared `srcSetEntries` in `contensisImage.ts`, and in each component `createAstroCanvasRenderer({ sizes })` in place of `createRenderer()`, with `sizes` computed from your own layout. The image service and `astro.config.mjs` block from section 3 are required too.
+Copy checklist for another project: `canvasRenderer.ts` and its test with `src/lib/fixtures/`, `canvasRendererAstro.ts`, `imageAttributes.ts`, `imageSizes.ts` and the shared `srcSetEntries` in `contensisImage.ts`, and in each component `createAstroCanvasRenderer({ sizes })` in place of `createRenderer()`, with `sizes` a preset or computed from your own layout. The image service and `astro.config.mjs` block from section 3 are required too.
 
 ## 5. Contensis Image API facts (verified)
 
@@ -243,7 +284,7 @@ That run used `sizes="100vw"`, but the Hero only renders 1024px wide on a 1440px
 
 ### Hero `sizes`
 
-The templates (`LandingPage`, `ContentArticle`, `FormPage`) wrap the Hero in `main.p-8` (2rem padding each side) and `div.max-w-5xl` (64rem, 1024px). So the Hero is `100vw - 4rem` wide until the viewport reaches 1024px + 4rem = 1088px, and 1024px wide after that. `Hero.astro` sets `sizes="(min-width: 1088px) 1024px, calc(100vw - 4rem)"` and its comment names these values: change them together if the layout changes.
+The templates (`LandingPage`, `ContentArticle`, `FormPage`) wrap the Hero in `main.p-8` (2rem padding each side) and `div.max-w-5xl` (64rem, 1024px). So the Hero is `100vw - 4rem` wide until the viewport reaches 1024px + 4rem = 1088px, and 1024px wide after that. `Hero.astro` passes `sizes="hero"`, the `hero` preset in `src/lib/imageSizes.ts` (`(min-width: 1088px) 1024px, calc(100vw - 4rem)`), whose comment names these values: change them together if the layout changes.
 
 Checked on the production build in Chrome (cache ignored, page reloaded after each change, since browsers do not downgrade a loaded image):
 
@@ -297,7 +338,7 @@ The real comparisons sit at 3 to 5 and the wrong-region controls at about 45, so
 pnpm test
 ```
 
-That runs `node --test src/lib/*.test.ts` (88 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes), and the canvas renderer (`canvasRenderer.test.ts`, rendering real delivery blocks kept in `src/lib/fixtures/`).
+That runs `node --test src/lib/*.test.ts` (101 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes), the shared image rules and `sizes` presets (`imageAttributes.test.ts`), and the canvas renderer (`canvasRenderer.test.ts`, rendering real delivery blocks kept in `src/lib/fixtures/`).
 
 `testImage` scenarios checked against real entries at `linkDepth` 0 and 1 (the `zz-test` entries):
 
@@ -332,6 +373,6 @@ The scripts used for this are not in the repo; this is the method.
 - **Size-only fields round up one step:** `w=450` requests 480, `w=600` requests 768. This is by design (fixed width set), but the variant is slightly bigger than needed.
 - **Canvas images at `linkDepth` 0 without a crop or size have no `width`/`height`**, so they can shift layout as they load (see "Canvas images").
 - **No AVIF and no `<picture>` fallback.** The API ignores AVIF and does no Accept negotiation, so WebP only.
-- **`pnpm astro check` has not been run.** `@astrojs/check` is not installed.
+- **`pnpm astro check` has 8 existing errors elsewhere** (the content-resolver Next loader, `contensis-core-api` imports in Forms, `searchQueries.ts`, the deprecated SimpleSearch). None are in the image code.
 - **Production headers not spot-checked yet** (section 5).
 - **`linkDepth` behaviour** needs raising with product dev (properties only at `linkDepth >= 1`).
