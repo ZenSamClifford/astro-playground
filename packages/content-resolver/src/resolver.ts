@@ -38,25 +38,27 @@ export const contentResolver = (
     getHeader("host") ||
     (!isSSR && window.location.hostname) ||
     "";
-  if (hostname.indexOf("localhost") > -1) clientConfig.versionStatus = "latest";
+  // Resolve per-request settings into a copy: clientConfig is shared by every
+  // request in the process, so mutating it would leak into later requests
+  const config = { ...clientConfig };
+  if (hostname.indexOf("localhost") > -1) config.versionStatus = "latest";
 
   const versionStatusHeader = getHeader("x-entry-versionstatus");
-  if (versionStatus)
-    clientConfig.versionStatus = versionStatus as VersionStatus;
+  if (versionStatus) config.versionStatus = versionStatus as VersionStatus;
   else if (["published", "latest"].includes(versionStatusHeader || "")) {
-    clientConfig.versionStatus = versionStatusHeader as VersionStatus;
+    config.versionStatus = versionStatusHeader as VersionStatus;
   }
 
   // const requestId = headers?.get('x-surrogate-request-id');
   if (isSSR)
-    clientConfig.defaultHeaders = {
+    config.defaultHeaders = {
       // Add referer header for tracing
       referer: getHeader("referer") || hostname || "",
       "x-require-surrogate-key": "true",
       "x-astro-ssr": "true",
     };
 
-  const client = new Client(clientConfig);
+  const client = new Client(config);
 
   const page = async <
     MappedEntry extends { [key: string]: any } = { [key: string]: any },
