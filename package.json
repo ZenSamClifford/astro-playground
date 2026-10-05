@@ -24,6 +24,7 @@
     "@contensis/forms": "^1.0.5",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "astro": "^7.3.4",
+    "contensis-core-api": "^1.2.3",
     "contensis-delivery-api": "^1.6.2",
     "contensis-management-api": "^2.4.0",
     "react": "^19.2.4",

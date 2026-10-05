@@ -1,5 +1,6 @@
 import type { ContentResolver } from '@contensis/content-resolver';
-import { type Expression, Op, OrderBy, Query } from 'contensis-delivery-api';
+import type { IExpression } from 'contensis-core-api';
+import { Op, OrderBy, Query } from 'contensis-delivery-api';
 import { listings } from '~/search.config';
 
 /**
@@ -14,7 +15,7 @@ type SearchOptions = Parameters<ContentResolver['search']>[1];
 // status has to be matched here
 export const baseQuery = (
   resolver: ContentResolver,
-  ...ops: Expression[]
+  ...ops: IExpression[]
 ): Query =>
   new Query(
     Op.equalTo(
@@ -32,7 +33,7 @@ export const runQuery = async (
   options?: SearchOptions
 ) => {
   try {
-    return await resolver.search(query, options);
+    return await resolver.search(query, options ?? {});
   } catch (error) {
     console.error('Search failed', error);
     return null;

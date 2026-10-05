@@ -190,6 +190,9 @@ importers:
       astro:
         specifier: ^7.3.4
         version: 7.3.4(@emnapi/core@1.11.3)(@emnapi/runtime@1.11.3)(@types/node@24.13.6)(jiti@2.7.0)(yaml@2.9.1)
+      contensis-core-api:
+        specifier: ^1.2.3
+        version: 1.2.3
       contensis-delivery-api:
         specifier: ^1.6.2
         version: 1.6.2
