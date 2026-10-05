@@ -187,7 +187,7 @@ describe('config from imageConfig.service.config', () => {
       c,
       logger
     ) as never;
-    assert.match(service.getURL(v, c, logger), /&quality=60$/);
+    assert.match(service.getURL(v, c, logger) as string, /&quality=60$/);
   });
   it('snaps getURL widths to the configured set', () => {
     const c = withConfig({ widths: [400, 800] });
@@ -196,7 +196,7 @@ describe('config from imageConfig.service.config', () => {
       c,
       logger
     ) as never;
-    assert.match(service.getURL(v, c, logger), /&width=800&/);
+    assert.match(service.getURL(v, c, logger) as string, /&width=800&/);
   });
   it('throws on invalid config', () => {
     assert.throws(

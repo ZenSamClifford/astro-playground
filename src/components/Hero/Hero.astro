@@ -17,9 +17,8 @@ const { title, image, tags = [] } = Astro.props;
 // layout (LandingPage, ContentArticle, FormPage).
 const heroSizes = '(min-width: 1088px) 1024px, calc(100vw - 4rem)';
 // Dimensions are missing only when mapImage could not resolve them (it already warns in dev).
-const hasSize = !!image?.width && !!image?.height;
-const width = hasSize ? image?.width : 1920;
-const height = hasSize ? image?.height : 800;
+const [width, height] =
+  image?.width && image?.height ? [image.width, image.height] : [1920, 800];
 ---
 
 <section
