@@ -11,6 +11,11 @@ interface Props {
 
 const { title, image, tags = [] } = Astro.props;
 
+// `sizes` mirrors the page layout: the templates wrap the Hero in `main.p-8` (2rem each
+// side) and `div.max-w-5xl` (64rem = 1024px), so it is 100vw - 4rem until the viewport
+// reaches 1024px + 4rem = 1088px, then fixed at 1024px. Update both together with the
+// layout (LandingPage, ContentArticle, FormPage).
+const heroSizes = '(min-width: 1088px) 1024px, calc(100vw - 4rem)';
 // Dimensions are missing only when mapImage could not resolve them (it already warns in dev).
 const hasSize = !!image?.width && !!image?.height;
 const width = hasSize ? image?.width : 1920;
@@ -28,7 +33,7 @@ const height = hasSize ? image?.height : 800;
         alt={image.alt}
         width={width}
         height={height}
-        sizes="100vw"
+        sizes={heroSizes}
         fetchpriority="high"
         loading="eager"
         decoding="async"

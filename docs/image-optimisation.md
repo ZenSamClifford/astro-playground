@@ -17,7 +17,7 @@ entry image field
   -> mapImage()                 src/contensis.mappers.ts
        getDisplayDimensions()   src/lib/contensisImage.ts   (crop, w/h, properties)
   -> { src, alt, width, height }
-  -> <Image> in Hero.astro      width/height, sizes="100vw"
+  -> <Image> in Hero.astro      width/height, sizes mirrors the layout
   -> service.getSrcSet()        one variant per allowed width
   -> service.getURL()           clampWidth() then buildVariantUrl()
   -> /image-library/x.jpeg?w=1920&h=1235&crop=1920,800,0,218&width=768&format=webp&quality=75
@@ -27,7 +27,7 @@ Step by step:
 
 1. `sys.uri` on the asset already carries the editor's transformations, for example `?w=1920&h=1235&crop=1920,800,0,218`.
 2. `mapImage` (in `contensis.mappers.ts`, used by `content`, `landing` and `form`) takes the field and returns `{ src, alt, width, height }`. `width` and `height` are the displayed size from `getDisplayDimensions` (section 4). An empty field maps to `null`.
-3. `Hero.astro` renders `<Image>` with those dimensions, `sizes="100vw"`, `fetchpriority="high"` and `loading="eager"`. The service returns an SVG `src` unchanged from `getURL()` as a safety net, since the API ignores `w`, `h` and `crop` for SVG.
+3. `Hero.astro` renders `<Image>` with those dimensions, `sizes="(min-width: 1088px) 1024px, calc(100vw - 4rem)"`, `fetchpriority="high"` and `loading="eager"`. The service returns an SVG `src` unchanged from `getURL()` as a safety net, since the API ignores `w`, `h` and `crop` for SVG.
 4. Astro does not build a `srcset` for external services itself, so the service implements `getSrcSet()`. It clamps each requested width to the allowed set (capped at the displayed width) and drops duplicates. The descriptor uses the true displayed size, so a 1000x400 crop gives `480w, 768w, 1000w` (the 1000w entry points at the 1024 URL, which the API serves at 1000 because it never upscales).
 5. `getURL()` snaps the width with `clampWidth` and calls `buildVariantUrl()`.
 
@@ -191,14 +191,30 @@ Production build, Lighthouse 12 CLI, mobile, simulated Slow 4G, 3 runs per page 
 | | TBT | 0 | 0 | none |
 | | Hero bytes | 240,597 (jpeg) | 12,462 (webp, 768w) | -94.8% |
 
-Mobile picked the 768w variant on both pages (`sizes="100vw"`, about 412 CSS px at DPR 1.75). The Hero is the only image request on each page and is the LCP element. The production HTML has `src` (width 1920) plus a five-entry `srcset`, `sizes="100vw"`, `fetchpriority="high"` and `loading="eager"`, and all five variants return 200 `image/webp`.
+Mobile picked the 768w variant on both pages (measured with `sizes="100vw"`, about 412 CSS px at DPR 1.75; the corrected `sizes` below gives the same pick there). The Hero is the only image request on each page and is the LCP element. The production HTML has `src` (width 1920) plus a five-entry `srcset`, `sizes="(min-width: 1088px) 1024px, calc(100vw - 4rem)"`, `fetchpriority="high"` and `loading="eager"`, and all five variants return 200 `image/webp`.
 
-### Desktop (1 run per page, 1440w chosen)
+### Desktop (1 run per page, measured with `sizes="100vw"`, 1440w chosen)
 
 | Page | Score | LCP | FCP | CLS | Hero bytes | Old jpeg | Change |
 |---|---|---|---|---|---|---|---|
 | landing | 0.98 | 1.00 s | 0.74 s | 0.00007 | 98,359 | 299,008 | -67.1% |
 | article | 0.98 | 1.00 s | 0.74 s | 0 | 61,026 | 240,597 | -74.6% |
+
+That run used `sizes="100vw"`, but the Hero only renders 1024px wide on a 1440px window, so the browser fetched the 1440w variant when 1024w was enough. The Hero `sizes` now describes the real rendered width (see "Hero `sizes`" below). With it, a 1440px window at DPR 1 picks 1024w: 43,402 B on `/content` (-85.5% against the old 299,008 B JPEG) and 22,856 B on the article page (-90.5% against 240,597 B). Lighthouse was not rerun after this change, so the scores and times above are from the 1440w run.
+
+### Hero `sizes`
+
+The templates (`LandingPage`, `ContentArticle`, `FormPage`) wrap the Hero in `main.p-8` (2rem padding each side) and `div.max-w-5xl` (64rem, 1024px). So the Hero is `100vw - 4rem` wide until the viewport reaches 1024px + 4rem = 1088px, and 1024px wide after that. `Hero.astro` sets `sizes="(min-width: 1088px) 1024px, calc(100vw - 4rem)"` and its comment names these values: change them together if the layout changes.
+
+Checked on the production build in Chrome (cache ignored, page reloaded after each change, since browsers do not downgrade a loaded image):
+
+| Viewport | DPR | Rendered width | Variant picked | Bytes |
+|---|---|---|---|---|
+| 1440 | 1 | 1024 | 1024w | 43,402 |
+| 500 | 1 | 436 | 480w | 9,470 |
+| 1440 | 2 | 1024 | 1920w | 232,162 |
+| 500 | 2 | 436 | 1024w | 43,402 |
+| 1440 (article page) | 1 | 1024 | 1024w | 22,856 |
 
 ### Variant sizes (bytes)
 
