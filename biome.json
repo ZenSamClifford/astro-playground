@@ -49,12 +49,6 @@
           }
         }
       }
-    },
-    {
-      "includes": ["src/components/deprecated/**"],
-      "linter": {
-        "enabled": false
-      }
     }
   ]
 }

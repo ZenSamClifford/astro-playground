@@ -14,10 +14,6 @@ export const contentResolver = createContentResolver({
     projectId: PUBLIC_PROJECT,
     accessToken: PUBLIC_ACCESS_TOKEN,
   },
-  contentTypeMappings: {
-    ...contentTypes,
-    contensis17382Ct: contentTypes.contentPageReact,
-    pageContent: contentTypes.contentPageAstro,
-  },
+  contentTypeMappings: contentTypes,
   isDev: import.meta.env.DEV,
 });

@@ -188,7 +188,7 @@ Use `ImageContensis` for an image field you render yourself. Use `createAstroCan
 
 Canvas image blocks are `{ id, type: '_image', value: { altText, caption?, asset, transformations } }`. Delivery returns `transformations` as a query-style string (`w=450&h=300`, `crop=400,300,100,50`, `w=600&h=400&crop=300,300,10,20`) or `null`, and `asset.sys.uri` carries the same query. So `getDisplayDimensions` works unchanged on the block value. At `linkDepth` 0 the asset has only `sys.uri`; at `linkDepth` 1 it also has `sys.properties.width/height` (SVG reports 0x0).
 
-`src/lib/canvasRenderer.ts` exports `createCanvasRenderer(options?)`, a `createRenderer` from `@contensis/canvas-html` with one override, `_image`. It is plain TypeScript with no `astro:` imports, so tests load it under node. The three canvas call sites (`ContentPage`, `ContentArticle`, `LandingPage`) use it through `createAstroCanvasRenderer({ sizes? })` in `src/lib/canvasRendererAstro.ts`. That small module is the only one with `astro:` imports: it passes `imageConfig.service.config` from `astro:assets` (so `astro.config.mjs` stays the single source of truth), `import.meta.env.DEV` and a `console.warn`.
+`src/lib/canvasRenderer.ts` exports `createCanvasRenderer(options?)`, a `createRenderer` from `@contensis/canvas-html` with one override, `_image`. It is plain TypeScript with no `astro:` imports, so tests load it under node. The three canvas call sites (`ContentArticle`, `LandingPage`) use it through `createAstroCanvasRenderer({ sizes? })` in `src/lib/canvasRendererAstro.ts`. That small module is the only one with `astro:` imports: it passes `imageConfig.service.config` from `astro:assets` (so `astro.config.mjs` stays the single source of truth), `import.meta.env.DEV` and a `console.warn`.
 
 | Option | Default | Notes |
 |---|---|---|
@@ -210,12 +210,11 @@ What each image becomes:
 
 Known consequence: a bare image (no crop, no size) at `linkDepth` 0 has no dimensions, so it has no `width`/`height` and can cause layout shift while loading. Raising `linkDepth` for the canvas field fixes it (properties then exist), at the cost of a larger response. We did not change `linkDepth`.
 
-Choosing `sizes`: the default is `(min-width: 768px) 50vw, 100vw`. The call sites pass the named presets in `src/lib/imageSizes.ts` (`article` for `ContentArticle` and `LandingPage`, `page` for `ContentPage`), whose comment block names the layout classes each mirrors, so change them together:
+Choosing `sizes`: the default is `(min-width: 768px) 50vw, 100vw`. The call sites pass the named presets in `src/lib/imageSizes.ts` (`article` for `ContentArticle` and `LandingPage`), whose comment block names the layout classes each mirrors, so change them together:
 
 | Call site | `sizes` | Why |
 |---|---|---|
 | `ContentArticle`, `LandingPage` | `(min-width: 768px) 592px, (min-width: 730px) 666px, calc(100vw - 4rem)` | `main.p-8` (2rem each side) around a column of `max-w-[37em]` on a `.typeset-article` element. Its font size is 18px below 768px (`--typeset-size` 16px x 1.125) and 16px from 768px, so the column is at most 666px below 768px (reached at a 730px viewport, since 730 - 64 = 666) and 592px from 768px. The `lg` grid track is `37em` of 16px, also 592px. |
-| `ContentPage` | `calc(100vw - 4rem)` | `main` has 2em (32px) padding and no maximum width. |
 
 Measured in Chrome on a production build: the prose column is 592px at 1440, 900 and 768px viewports, 666px at 740px and 436px at 500px, as computed.
 
@@ -373,6 +372,6 @@ The scripts used for this are not in the repo; this is the method.
 - **Size-only fields round up one step:** `w=450` requests 480, `w=600` requests 768. This is by design (fixed width set), but the variant is slightly bigger than needed.
 - **Canvas images at `linkDepth` 0 without a crop or size have no `width`/`height`**, so they can shift layout as they load (see "Canvas images").
 - **No AVIF and no `<picture>` fallback.** The API ignores AVIF and does no Accept negotiation, so WebP only.
-- **`pnpm astro check` has 8 existing errors elsewhere** (the content-resolver Next loader, `contensis-core-api` imports in Forms, `searchQueries.ts`, the deprecated SimpleSearch). None are in the image code.
+- **`pnpm astro check` has 8 existing errors elsewhere** (the content-resolver Next loader, `contensis-core-api` imports in Forms, `searchQueries.ts`, the removed deprecated SimpleSearch). None are in the image code.
 - **Production headers not spot-checked yet** (section 5).
 - **`linkDepth` behaviour** needs raising with product dev (properties only at `linkDepth >= 1`).

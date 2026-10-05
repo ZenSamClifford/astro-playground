@@ -137,7 +137,6 @@ describe('resolveSizes', () => {
       resolveSizes('article'),
       '(min-width: 768px) 592px, (min-width: 730px) 666px, calc(100vw - 4rem)'
     );
-    assert.equal(resolveSizes('page'), 'calc(100vw - 4rem)');
   });
   it('passes a raw string through and defaults when absent', () => {
     assert.equal(

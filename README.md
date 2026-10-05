@@ -29,7 +29,6 @@ This is a pnpm workspace. The Astro app lives at the root and the shared content
 │   ├── assets/
 │   ├── components/
 │   │   ├── ContentArticle/
-│   │   ├── ContentPage/
 │   │   ├── FormPage/              # Form content type template
 │   │   ├── Forms/                 # Form selector and renderer
 │   │   ├── Hero/
@@ -37,9 +36,7 @@ This is a pnpm workspace. The Astro app lives at the root and the shared content
 │   │   ├── PageHome/
 │   │   ├── PrimaryNavigation/
 │   │   ├── SearchPage/            # Site and listing search
-│   │   ├── deprecated/Search/     # Earlier search implementations
-│   │   ├── ui/                    # shadcn/ui primitives
-│   │   └── AppClientRouteLoader.tsx
+│   │   └── ui/                    # shadcn/ui primitives
 │   ├── contensis/                 # Loaders, API proxy, navigation, surrogate keys
 │   ├── layouts/
 │   │   └── Layout.astro
@@ -56,7 +53,6 @@ This is a pnpm workspace. The Astro app lives at the root and the shared content
 │   ├── contensis.config.ts
 │   ├── contensis.mappers.ts
 │   ├── env.d.ts
-│   ├── live.config.ts             # Astro live content collections config
 │   ├── middleware.ts
 │   └── search.config.ts
 ├── astro.config.mjs

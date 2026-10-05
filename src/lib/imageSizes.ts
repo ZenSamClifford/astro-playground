@@ -8,12 +8,10 @@
 //   (--typeset-size 16px x 1.125) and 16px from 768px. So the column is at most 666px
 //   below 768px (reached at a 730px viewport, 730 - 64 = 666) and 592px from 768px (the
 //   lg grid track is also 37em of 16px = 592px).
-// page: ContentPage has `main` with 2em (32px) padding and no maximum width.
 const presets = {
   hero: '(min-width: 1088px) 1024px, calc(100vw - 4rem)',
   article:
     '(min-width: 768px) 592px, (min-width: 730px) 666px, calc(100vw - 4rem)',
-  page: 'calc(100vw - 4rem)',
 } as const;
 
 export type ImageSizesPreset = keyof typeof presets;
