@@ -17,6 +17,12 @@ const { component: ContentTypeComponent, ...pageData } = await resolve.page<{
   nodeId,
 });
 
+// Share the entry's identity and language with everything rendered beneath it
+// (layout, labels, queries) without passing them down as props
+Astro.locals.entrySys = pageData.entry?.sys;
+Astro.locals.nodeId = pageData.node?.id;
+Astro.locals.nodeLanguage = pageData.node?.language;
+
 if (pageData.isPageNotFound || !ContentTypeComponent) {
   Astro.response.status = 404;
   Astro.response.statusText = 'Not found';

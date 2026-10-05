@@ -1,9 +1,6 @@
 import { useRef } from 'react';
 import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group';
-import { contentTypes } from '~/search.config';
 import { allTypes, type SearchType } from './searchTypes';
-
-const options = [{ id: allTypes, label: 'All' }, ...contentTypes];
 
 /**
  * Picks the content type to search and submits the surrounding form, so a new
@@ -12,7 +9,16 @@ const options = [{ id: allTypes, label: 'All' }, ...contentTypes];
  * term search even before this island hydrates. It has no name for All, so
  * the form and the page's own links agree on one URL: no type parameter.
  */
-const SearchTypeFilter = ({ value }: { value: SearchType }) => {
+const SearchTypeFilter = ({
+  value,
+  options,
+  label,
+}: {
+  value: SearchType;
+  /** Labelled by the page, which knows the locale */
+  options: { id: SearchType; label: string }[];
+  label: string;
+}) => {
   const input = useRef<HTMLInputElement>(null);
 
   return (
@@ -24,7 +30,7 @@ const SearchTypeFilter = ({ value }: { value: SearchType }) => {
         value={value}
       />
       <ToggleGroup
-        aria-label="Filter by content type"
+        aria-label={label}
         variant="outline"
         spacing={0}
         value={[value]}

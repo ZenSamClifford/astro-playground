@@ -1,7 +1,7 @@
 ---
 import type { ContentResolver } from '@contensis/content-resolver';
 import { findRelated } from '~/lib/searchQueries';
-import { listings } from '~/search.config';
+import { currentLanguage, pageTranslations } from '~/i18n/current';
 
 interface Props {
   resolver: ContentResolver;
@@ -10,14 +10,16 @@ interface Props {
 }
 
 const { resolver, entryId, categories } = Astro.props;
-const items = await findRelated(resolver, { entryId, categories });
+const language = currentLanguage(Astro);
+const t = pageTranslations(Astro);
+const items = await findRelated(resolver, { entryId, categories, language });
 ---
 
 {
   items.length > 0 && (
-    <aside aria-labelledby="related-heading" class="lg:col-start-2 lg:border-l lg:pl-8">
+    <aside aria-labelledby="related-heading" class="lg:col-start-2 lg:border-s lg:ps-8">
       <h2 id="related-heading" class="mb-3 text-lg font-semibold">
-        {listings.related.heading}
+        {t('related')}
       </h2>
       <ul class="flex flex-col gap-2">
         {items.map(item => (

@@ -1,6 +1,7 @@
 ---
 import ImageContensis from '~/components/ImageContensis/ImageContensis.astro';
 import { Badge } from '~/components/ui/badge';
+import { pageTranslations } from '~/i18n/current';
 import type { MappedImage } from '~/lib/contensisImage';
 
 interface Props {
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const { title, image, tags = [] } = Astro.props;
+const t = pageTranslations(Astro);
 // The section is a fixed 12/5 box, hence the 1920x800 fallback size for images without one.
 ---
 
@@ -31,7 +33,7 @@ const { title, image, tags = [] } = Astro.props;
   >
     {
       tags.length > 0 && (
-        <ul class="mb-4 flex flex-wrap gap-2" aria-label="Tags">
+        <ul class="mb-4 flex flex-wrap gap-2" aria-label={t('tags')}>
           {tags.map(tag => (
             <li>
               <Badge variant="secondary">{tag}</Badge>

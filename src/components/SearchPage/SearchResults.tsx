@@ -7,13 +7,14 @@ import {
   ItemGroup,
   ItemTitle,
 } from '~/components/ui/item';
-import { searchTypeLabel } from './searchTypes';
+import type { Translate } from '~/i18n/ui';
+import { typeLabel } from './searchTypes';
 
 /**
  * Lives in a React file rather than the Astro page because Item's `render`
  * prop needs a React element, and JSX in an .astro file is not one.
  */
-const SearchResults = ({ items }: { items: Entry[] }) => (
+const SearchResults = ({ items, t }: { items: Entry[]; t: Translate }) => (
   <ItemGroup>
     {items.map(result => (
       // The listitem role sits on a wrapper so the rendered <a> keeps its link role
@@ -28,7 +29,7 @@ const SearchResults = ({ items }: { items: Entry[] }) => (
             <ItemTitle>
               {result.entryTitle}
               <Badge variant="secondary">
-                {searchTypeLabel(result.sys.contentTypeId)}
+                {typeLabel(t, result.sys.contentTypeId)}
               </Badge>
             </ItemTitle>
             {result.description && (

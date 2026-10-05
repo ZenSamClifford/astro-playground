@@ -23,10 +23,12 @@ import {
 } from '~/components/ui/pagination';
 import Layout from '~/layouts/Layout.astro';
 import { baseQuery, runQuery } from '~/lib/searchQueries';
-import { search } from '~/search.config';
+import { contentTypes, search } from '~/search.config';
 import SearchResults from './SearchResults';
 import SearchTypeFilter from './SearchTypeFilter';
-import { allTypes, toSearchType } from './searchTypes';
+import { currentLanguage, pageTranslations } from '~/i18n/current';
+import { fill, formatResultCount, isolate } from '~/i18n/ui';
+import { allTypes, toSearchType, typeLabel, type SearchType } from './searchTypes';
 
 interface SearchPageProps {
   mappedTitle: string;
@@ -36,6 +38,12 @@ interface Props extends ContentTypePageProps<SearchPageProps> {}
 
 const { entry, mappedEntry, node, resolver } = Astro.props;
 const { pageSize, termMaxLength, termFields, fields } = search;
+const language = currentLanguage(Astro);
+const t = pageTranslations(Astro);
+const typeOptions: { id: SearchType; label: string }[] = [
+  { id: allTypes, label: t('all') },
+  ...contentTypes.map(type => ({ id: type.id, label: typeLabel(t, type.id) })),
+];
 
 const params = Astro.url.searchParams;
 const term = (params.get('term') ?? '').trim().slice(0, termMaxLength);
@@ -50,6 +58,7 @@ const contentTypeIds =
 
 const query = baseQuery(
   resolver,
+  Op.equalTo('sys.language', language),
   Op.in('sys.contentTypeId', ...contentTypeIds),
   ...(term
     ? [Op.or(...termFields.map(field => Op.freeText(field, term)))]
@@ -105,7 +114,7 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
   .flatMap((n, i, shown) => (i > 0 && n - shown[i - 1] > 1 ? [null, n] : [n]));
 ---
 
-<Layout pageTitle={entry.entryTitle || node?.displayName || 'Search'}>
+<Layout pageTitle={entry.entryTitle || node?.displayName || t('searchTitle')}>
   <main class="max-w-3xl p-8">
     <h1 class="mb-6 text-3xl font-semibold tracking-tight sm:text-4xl">
       {mappedEntry.mappedTitle}
@@ -114,21 +123,26 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
     <search class="mb-6">
       <form method="get" class="flex flex-col gap-3">
         <div class="flex gap-2">
-          <label for="search-term" class="sr-only">Search term</label>
+          <label for="search-term" class="sr-only">{t('searchTerm')}</label>
           <Input
             id="search-term"
             type="search"
             name="term"
             value={term}
-            placeholder="Search content and blogs"
+            placeholder={t('searchPlaceholder')}
             maxLength={termMaxLength}
           />
           <Button type="submit">
             <SearchIcon data-icon="inline-start" />
-            Search
+            {t('search')}
           </Button>
         </div>
-        <SearchTypeFilter value={type} client:load />
+        <SearchTypeFilter
+          value={type}
+          options={typeOptions}
+          label={t('filterByType')}
+          client:load
+        />
       </form>
     </search>
 
@@ -136,22 +150,25 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
       items.length > 0 ? (
         <>
           <p class="mb-4 text-sm text-muted-foreground" aria-live="polite">
-            {totalCount} {totalCount === 1 ? 'result' : 'results'}
-            {term && ` for '${term}'`}
+            {formatResultCount(language, totalCount, term || undefined)}
           </p>
-          <SearchResults items={items} />
+          <SearchResults items={items} t={t} />
           {pageCount > 1 && (
-            <Pagination className="mt-6">
+            <Pagination className="mt-6" aria-label={t('pagination')}>
               <PaginationContent>
                 {page > 1 && (
                   <PaginationItem>
-                    <PaginationPrevious href={searchHref({ page: page - 1 })} />
+                    <PaginationPrevious
+                      href={searchHref({ page: page - 1 })}
+                      text={t('previous')}
+                      aria-label={t('previousPage')}
+                    />
                   </PaginationItem>
                 )}
                 {pageNumbers.map(n => (
                   <PaginationItem>
                     {n === null ? (
-                      <PaginationEllipsis />
+                      <PaginationEllipsis label={t('morePages')} />
                     ) : (
                       <PaginationLink
                         href={searchHref({ page: n })}
@@ -164,7 +181,11 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
                 ))}
                 {page < pageCount && (
                   <PaginationItem>
-                    <PaginationNext href={searchHref({ page: page + 1 })} />
+                    <PaginationNext
+                      href={searchHref({ page: page + 1 })}
+                      text={t('next')}
+                      aria-label={t('nextPage')}
+                    />
                   </PaginationItem>
                 )}
               </PaginationContent>
@@ -179,13 +200,13 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
             </EmptyMedia>
             <EmptyTitle>
               {!results
-                ? 'Search is unavailable'
+                ? t('searchUnavailable')
                 : term
-                  ? `No results for '${term}'`
-                  : 'No results'}
+                  ? fill(t('noResultsForTerm'), { term: isolate(term) })
+                  : t('noResults')}
             </EmptyTitle>
             <EmptyDescription>
-              Try a different term or content type.
+              {t('noResultsHint')}
             </EmptyDescription>
           </EmptyHeader>
           {term && (
@@ -194,7 +215,7 @@ const pageNumbers = [...new Set([1, page - 1, page, page + 1, pageCount])]
                 href={searchHref({ term: '' })}
                 class={buttonVariants({ variant: 'outline' })}
               >
-                Clear search
+                {t('clearSearch')}
               </a>
             </EmptyContent>
           )}

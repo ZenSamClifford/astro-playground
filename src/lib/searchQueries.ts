@@ -44,13 +44,18 @@ export const runQuery = async (
 // newest first
 export const findRelated = async (
   resolver: ContentResolver,
-  { entryId, categories }: { entryId: string; categories: string[] }
+  {
+    entryId,
+    categories,
+    language,
+  }: { entryId: string; categories: string[]; language: string }
 ) => {
   const { contentTypes, fields, pageSize, matchField } = listings.related;
   if (!categories.length) return [];
 
   const query = baseQuery(
     resolver,
+    Op.equalTo('sys.language', language),
     Op.in('sys.contentTypeId', ...contentTypes),
     Op.in(matchField, ...categories),
     Op.not(Op.equalTo('sys.id', entryId)),

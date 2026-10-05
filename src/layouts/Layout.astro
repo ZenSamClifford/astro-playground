@@ -1,17 +1,31 @@
 ---
 import "~/styles/global.css";
 import PrimaryNavigation from "~/components/PrimaryNavigation/PrimaryNavigation";
+import LanguageSwitcher from "~/components/LanguageSwitcher/LanguageSwitcher.astro";
+import { currentLanguage, pageTranslations } from "~/i18n/current";
+import { languageDir } from "~/i18n/language";
+import { getTranslationLinks } from "~/i18n/translations";
+import { publicOrigin } from "~/lib/publicOrigin";
 
 interface Props {
   pageTitle?: string;
 }
 
 const { pageTitle } = Astro.props;
-const primaryNavigation = await Astro.locals.primaryNavigation;
+const { entrySys, nodeId, api } = Astro.locals;
+const language = currentLanguage(Astro);
+const t = pageTranslations(Astro);
+const [primaryNavigation, translations] = await Promise.all([
+  Astro.locals.primaryNavigation?.(language),
+  api && entrySys && nodeId
+    ? getTranslationLinks(api, entrySys, nodeId, Astro.url.pathname)
+    : [],
+]);
+const origin = publicOrigin(Astro.request, Astro.url);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={language} dir={languageDir(language)}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -23,16 +37,35 @@ const primaryNavigation = await Astro.locals.primaryNavigation;
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="icon" href="/static/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <title>{pageTitle ?? "Astro Basics"}</title>
+    <title>{pageTitle ?? t("siteTitle")}</title>
+    <link rel="canonical" href={origin + Astro.url.pathname} />
+    {
+      translations.map(
+        link =>
+          link.href && (
+            <link rel="alternate" hreflang={link.language} href={origin + link.href} />
+          )
+      )
+    }
   </head>
   <body>
     {
-      primaryNavigation && (
-        <header class="border-b px-4 py-2">
-          <PrimaryNavigation
-            client:idle
-            items={primaryNavigation}
-            currentPath={Astro.url.pathname}
+      (primaryNavigation || translations.length > 0) && (
+        <header class="flex items-center justify-between gap-4 border-b px-4 py-2">
+          {primaryNavigation ? (
+            <PrimaryNavigation
+              client:idle
+              items={primaryNavigation}
+              currentPath={Astro.url.pathname}
+              label={t("primaryNav")}
+            />
+          ) : (
+            <div />
+          )}
+          <LanguageSwitcher
+            current={language}
+            links={translations}
+            label={t("language")}
           />
         </header>
       )
