@@ -3,6 +3,7 @@ import {
   buildVariantUrl,
   clampWidth,
   isSvg,
+  srcSetEntries,
   validateVariantOptions,
 } from './contensisImage.ts';
 import {
@@ -89,19 +90,18 @@ const service: ExternalImageService = {
     // Default to the configured widths so callers need not pass `widths`.
     const widths = options.widths ?? o.widths;
     if (!widths?.length || !options.width) return [];
-    const displayed = Number(options.width);
-    const capped = [
-      ...new Set(widths.map(w => clampWidth(w, displayed, o))),
-    ].sort((a, b) => a - b);
-    // The URL keeps the allowed width, but a variant capped by a smaller original is
-    // really that smaller size, so the descriptor says so (the API never upscales).
+    // Mirror the getURL bypass: an SVG is never transformed, so it has no variants.
+    const src = typeof options.src === 'string' ? options.src : options.src.src;
+    if (isSvg(src)) return [];
     // The displayed height is carried over unchanged via the spread. getURL ignores it;
     // Astro only compares it in matchesValidatedTransform, where the width already
     // decides whether a transform is the primary one.
-    return capped.map(width => ({
-      transform: { ...options, width, widths: undefined },
-      descriptor: `${displayed < width ? displayed : width}w`,
-    }));
+    return srcSetEntries(Number(options.width), o, widths).map(
+      ({ width, descriptor }) => ({
+        transform: { ...options, width, widths: undefined },
+        descriptor,
+      })
+    );
   },
 
   getHTMLAttributes(options) {

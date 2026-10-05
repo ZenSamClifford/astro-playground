@@ -8,7 +8,7 @@ This branch registers a custom Astro external image service. Astro asks the serv
 
 Goals: fewer image bytes, better LCP and CLS, and less code per component (use `<Image>` and get a `srcset`).
 
-Scope: structured image fields rendered by the Hero. Canvas (rich text) images are not covered yet (see section 8).
+Scope: structured image fields rendered by the Hero, and images inside Canvas (rich text) content (see "Canvas images" below).
 
 ## 2. How it works
 
@@ -143,6 +143,45 @@ Verified shapes:
 
 We did not change `linkDepth`. To be raised with product dev separately.
 
+## Canvas images
+
+Canvas image blocks are `{ id, type: '_image', value: { altText, caption?, asset, transformations } }`. Delivery returns `transformations` as a query-style string (`w=450&h=300`, `crop=400,300,100,50`, `w=600&h=400&crop=300,300,10,20`) or `null`, and `asset.sys.uri` carries the same query. So `getDisplayDimensions` works unchanged on the block value. At `linkDepth` 0 the asset has only `sys.uri`; at `linkDepth` 1 it also has `sys.properties.width/height` (SVG reports 0x0).
+
+`src/lib/canvasRenderer.ts` exports `createCanvasRenderer(options?)`, a `createRenderer` from `@contensis/canvas-html` with one override, `_image`. It is plain TypeScript with no `astro:` imports, so tests load it under node. The three canvas call sites (`ContentPage`, `ContentArticle`, `LandingPage`) use it through `createAstroCanvasRenderer({ sizes? })` in `src/lib/canvasRendererAstro.ts`. That small module is the only one with `astro:` imports: it passes `imageConfig.service.config` from `astro:assets` (so `astro.config.mjs` stays the single source of truth), `import.meta.env.DEV` and a `console.warn`.
+
+| Option | Default | Notes |
+|---|---|---|
+| `sizes` | `'(min-width: 768px) 50vw, 100vw'` | The `sizes` attribute for every canvas image. Generic on purpose (full width on narrow screens, half width from 768px up): set it per call site to match your layout. It is a call-site option, not part of `astro.config.mjs`. |
+| `imageOptions` | defaults | Same overrides as the service config (widths, quality, and so on). Invalid values throw when the renderer is created. |
+| `isDev` | `false` | Dev only: warn when an image has no known dimensions. |
+| `onWarn` | none | Receives the dev warning. |
+
+What each image becomes:
+
+- `src` is a 768 variant (capped by the displayed width when known), `srcset` is one WebP variant per allowed width, built by the same `srcSetEntries` helper the service uses, so descriptors are capped at the real displayed width and never duplicated.
+- The variant URLs keep the stored `w`, `h` and `crop` and append `width`, `format` and `quality` (the same rule as the Hero).
+- `loading="lazy"` and `decoding="async"` always. No `fetchpriority`.
+- `width` and `height` only when the displayed size is known (crop, then `w`/`h`, then `sys.properties`). Otherwise they are left out and a dev warning is logged. Nothing is guessed.
+- `alt` is always written, as `alt=""` when empty. Attribute values are HTML-escaped, so `&` in a URL becomes `&amp;`.
+- A caption becomes `<figure>` plus `<figcaption>`. The stock renderer also copied the caption into a `title` attribute; that duplicate is dropped.
+- SVG is not transformed: it renders as a plain `<img src alt>` with no `srcset`, `width` or `height`. The service's `getSrcSet()` also returns no entries for an SVG, matching its `getURL()` bypass. An image with no asset uri renders nothing, and in dev logs a warning naming the block id.
+- In dev, `getDisplayDimensions` warns whenever a size cannot be resolved: no `sys.properties` (a link), or properties with 0 or null width or height. An SVG stays silent, since it has no pixel size.
+
+Known consequence: a bare image (no crop, no size) at `linkDepth` 0 has no dimensions, so it has no `width`/`height` and can cause layout shift while loading. Raising `linkDepth` for the canvas field fixes it (properties then exist), at the cost of a larger response. We did not change `linkDepth`.
+
+Choosing `sizes`: the default is `(min-width: 768px) 50vw, 100vw`. The call sites pass values taken from their real layout, and the comment next to each names the layout values it mirrors, so change them together:
+
+| Call site | `sizes` | Why |
+|---|---|---|
+| `ContentArticle`, `LandingPage` | `(min-width: 768px) 592px, (min-width: 730px) 666px, calc(100vw - 4rem)` | `main.p-8` (2rem each side) around a column of `max-w-[37em]` on a `.typeset-article` element. Its font size is 18px below 768px (`--typeset-size` 16px x 1.125) and 16px from 768px, so the column is at most 666px below 768px (reached at a 730px viewport, since 730 - 64 = 666) and 592px from 768px. The `lg` grid track is `37em` of 16px, also 592px. |
+| `ContentPage` | `calc(100vw - 4rem)` | `main` has 2em (32px) padding and no maximum width. |
+
+Measured in Chrome on a production build: the prose column is 592px at 1440, 900 and 768px viewports, 666px at 740px and 436px at 500px, as computed.
+
+Why not a plain `50vw`: a phone, where the image usually fills the column, would ask for about half the pixels it needs. For a 900x600 image at `linkDepth` 1 (srcset 480w, 768w, 900w), a 390px viewport at DPR 3 needs 1170 pixels and picks 900w (the largest) with `100vw` below 768px, but needs only 585 and picks 768w under a plain `50vw`. A 1440px viewport at DPR 1 picks 768w under the default (needs 720).
+
+Copy checklist for another project: `canvasRenderer.ts` and its test with `src/lib/fixtures/`, `canvasRendererAstro.ts`, the shared `srcSetEntries` in `contensisImage.ts`, and in each component `createAstroCanvasRenderer({ sizes })` in place of `createRenderer()`, with `sizes` computed from your own layout. The image service and `astro.config.mjs` block from section 3 are required too.
+
 ## 5. Contensis Image API facts (verified)
 
 | Behaviour | Result |
@@ -258,7 +297,7 @@ The real comparisons sit at 3 to 5 and the wrong-region controls at about 45, so
 pnpm test
 ```
 
-That runs `node --test src/lib/*.test.ts` (66 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes).
+That runs `node --test src/lib/*.test.ts` (87 tests, no extra install). They cover URI parsing (including values that fail to parse and malformed escapes), SVG detection, width clamping and caps, the allow-list, deterministic URL building with `w`/`h`/`crop` kept (dev throw, production warn and fallback), the fallback steps including `transformations` string forms and null safety, and the service (`validateOptions` then `getSrcSet`, true displayed size in descriptors, no duplicate descriptors, the SVG bypass, HTML attributes), and the canvas renderer (`canvasRenderer.test.ts`, rendering real delivery blocks kept in `src/lib/fixtures/`).
 
 `testImage` scenarios checked against real entries at `linkDepth` 0 and 1 (the `zz-test` entries):
 
@@ -291,7 +330,7 @@ The scripts used for this are not in the repo; this is the method.
 - **`linkDepth` 0, bare uri:** no dimensions, so the Hero uses a 1920x800 fallback and the srcset has all five widths, even if the original is much smaller.
 - **Crop larger than the source:** the API returns a smaller image, but we report the crop size as the displayed size, so the `width`/`height` attributes are wrong.
 - **Size-only fields round up one step:** `w=450` requests 480, `w=600` requests 768. This is by design (fixed width set), but the variant is slightly bigger than needed.
-- **Canvas (rich text) images are not covered.** A future phase needs a read-only look at the canvas image node shape (which fields carry the uri, alt and any crop; whether dimensions are available) and a `createRenderer` override that reuses the same `buildVariantUrl` helper. Unknowns: whether canvas nodes carry `sys.properties`, and what `sizes` makes sense in prose.
+- **Canvas images at `linkDepth` 0 without a crop or size have no `width`/`height`**, so they can shift layout as they load (see "Canvas images").
 - **No AVIF and no `<picture>` fallback.** The API ignores AVIF and does no Accept negotiation, so WebP only.
 - **`pnpm astro check` has not been run.** `@astrojs/check` is not installed.
 - **Production headers not spot-checked yet** (section 5).

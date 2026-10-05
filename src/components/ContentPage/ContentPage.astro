@@ -1,8 +1,9 @@
 ---
-import { type Block, createRenderer } from '@contensis/canvas-html';
+import type { Block } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import background from '~/assets/background.svg';
 import ClientSearch from '~/components/deprecated/Search/ClientSearch';
+import { createAstroCanvasRenderer } from '~/lib/canvasRendererAstro';
 import Layout from '~/layouts/Layout.astro';
 
 interface ContentPageProps {
@@ -14,7 +15,9 @@ interface Props extends ContentTypePageProps<ContentPageProps> {}
 
 const { contentTypeId, entry, mappedEntry, node, resolver } = Astro.props;
 
-const renderCanvas = createRenderer();
+// `sizes` mirrors the layout: `main` has 2em (32px) padding and no max width, so canvas
+// content is the viewport minus 4rem wide. Update together with the layout.
+const renderCanvas = createAstroCanvasRenderer({ sizes: 'calc(100vw - 4rem)' });
 const canvasHtml = mappedEntry.canvas
   ? renderCanvas({ data: mappedEntry.canvas })
   : '';

@@ -1,9 +1,9 @@
 ---
-import { createRenderer } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import Hero from '~/components/Hero/Hero.astro';
 import type { LandingComposerItem } from '~/contensis.mappers';
 import type { MappedImage } from '~/lib/contensisImage';
+import { createAstroCanvasRenderer } from '~/lib/canvasRendererAstro';
 import Layout from '~/layouts/Layout.astro';
 
 interface LandingPageProps {
@@ -16,7 +16,14 @@ interface Props extends ContentTypePageProps<LandingPageProps> {}
 
 const { entry, mappedEntry, node } = Astro.props;
 
-const renderCanvas = createRenderer();
+// `sizes` mirrors the layout: `main.p-8` (2rem each side) around a column that is
+// `max-w-[37em]` of a `.typeset-article` element, whose font-size is 18px below 768px
+// (--typeset-size 16px x 1.125) and 16px from 768px. So the column is 666px at most below
+// 768px (it reaches that at a 730px viewport, 730 - 64 = 666), and 592px from 768px (the
+// lg grid track is also 37em of 16px = 592px). Update together with the layout.
+const canvasSizes =
+  '(min-width: 768px) 592px, (min-width: 730px) 666px, calc(100vw - 4rem)';
+const renderCanvas = createAstroCanvasRenderer({ sizes: canvasSizes });
 ---
 
 <Layout pageTitle={entry.entryTitle || node.displayName || 'Landing'}>

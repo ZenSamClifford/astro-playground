@@ -301,7 +301,7 @@ describe('getDisplayDimensions', () => {
     getDisplayDimensions(field('/a.jpeg?w=1&h=2'), m => warnings.push(m));
     assert.deepEqual(warnings, []);
   });
-  it('0/0 properties are not trusted but do not warn as a link', () => {
+  it('0/0 properties are not trusted and warn once', () => {
     const warnings: string[] = [];
     assert.equal(
       getDisplayDimensions(field('/a.jpeg', { width: 0, height: 0 }), m =>
@@ -309,6 +309,18 @@ describe('getDisplayDimensions', () => {
       ),
       undefined
     );
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /no usable width and height/);
+  });
+  it('an SVG with 0/0 or missing properties stays silent', () => {
+    const warnings: string[] = [];
+    for (const properties of [{ width: 0, height: 0 }, undefined])
+      assert.equal(
+        getDisplayDimensions(field('/logo.svg', properties), m =>
+          warnings.push(m)
+        ),
+        undefined
+      );
     assert.deepEqual(warnings, []);
   });
   it('null field and null asset are safe', () => {

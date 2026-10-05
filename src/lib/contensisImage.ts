@@ -210,6 +210,25 @@ export const buildVariantUrl = (
   return `${path}?${params.join('&')}`;
 };
 
+/**
+ * The variants of a srcset: one per distinct allowed width, ascending. `width` is the
+ * width the URL asks the API for. With a known displayed width, widths above it fold into
+ * the smallest allowed width that covers it, and the descriptor is the real size (the API
+ * never upscales), so a 450px image on the 480 URL is described as `450w`. Without one the
+ * fixed set is used as is. Shared by the image service and the canvas renderer.
+ */
+export const srcSetEntries = (
+  displayedWidth: number | undefined,
+  options: ImageOptions = imageOptions,
+  widths: readonly number[] = options.widths
+): { width: number; descriptor: string }[] =>
+  [...new Set(widths.map(w => clampWidth(w, displayedWidth, options)))]
+    .sort((a, b) => a - b)
+    .map(width => ({
+      width,
+      descriptor: `${displayedWidth !== undefined && displayedWidth < width ? displayedWidth : width}w`,
+    }));
+
 interface Dimensions {
   width: number;
   height: number;
@@ -250,7 +269,7 @@ const dimsFromTransformations = (
  * Displayed size of an image field, via the plan's fallback order:
  * 1 crop, 2 w/h, 3 asset.sys.properties (original file, only when no crop/size),
  * 4 undefined (caller uses a CSS aspect-ratio default).
- * `onWarn` is only called in dev and only when properties were needed but the asset is a link.
+ * `onWarn` fires (callers gate it to dev) whenever the size cannot be resolved, except for SVG.
  */
 export const getDisplayDimensions = (
   field: ImageFieldValue | null | undefined,
@@ -279,9 +298,12 @@ export const getDisplayDimensions = (
     return { width: pw, height: ph };
   }
 
-  if (!sys?.properties) {
+  // An SVG has no pixel size, so undefined is expected and silent.
+  if (!isSvg(uri)) {
     onWarn?.(
-      `[contensisImage] ${uri} has no crop or size and the asset is only a link (no sys.properties); dimensions unavailable`
+      sys?.properties
+        ? `[contensisImage] ${uri} has no crop or size and its sys.properties have no usable width and height; dimensions unavailable`
+        : `[contensisImage] ${uri} has no crop or size and the asset is only a link (no sys.properties); dimensions unavailable`
     );
   }
   return undefined;

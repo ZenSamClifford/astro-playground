@@ -92,6 +92,16 @@ describe('validateOptions then getSrcSet', () => {
   it('a non-numeric quality is invalid (throws in dev)', () => {
     assert.throws(() => run(1920, 800, { quality: 'high' }), /quality/);
   });
+  it('getSrcSet returns no entries for an SVG src', () => {
+    assert.deepEqual(
+      service.getSrcSet?.(
+        { src: '/image-library/logo.svg', width: 300, height: 150 } as never,
+        cfg,
+        logger
+      ),
+      []
+    );
+  });
   it('getURL returns an SVG src unchanged', () => {
     assert.equal(
       service.getURL(
