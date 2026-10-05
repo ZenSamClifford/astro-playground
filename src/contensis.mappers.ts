@@ -1,5 +1,27 @@
 import type { Block } from '@contensis/canvas-html';
 import { defineMapping } from '@contensis/content-resolver';
+import {
+  getDisplayDimensions,
+  type ImageFieldValue,
+  type MappedImage,
+} from './lib/contensisImage';
+
+// The asset uri already carries the field's crop transformations
+const mapImage = (
+  field: ImageFieldValue | null | undefined
+): MappedImage | null => {
+  const src = field?.asset?.sys?.uri;
+  if (!src) return null;
+  const dimensions = getDisplayDimensions(field, message => {
+    if (import.meta.env.DEV) console.warn(message);
+  });
+  return {
+    src,
+    alt: field?.altText ?? '',
+    width: dimensions?.width,
+    height: dimensions?.height,
+  };
+};
 
 export const contentPageAstro = defineMapping<
   { mappedTitle: string; canvas: Block[] },
@@ -70,26 +92,22 @@ export const blog = defineMapping<
 export const content = defineMapping<
   {
     mappedTitle: string;
-    image: { src: string; alt: string } | null;
+    image: MappedImage | null;
     canvas: Block[];
     categories: string[];
   },
   {
     title: string;
-    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    image: ImageFieldValue | null;
     canvas: Block[];
     categories?: string[];
   }
 >({
   component: () => import('./components/ContentArticle/ContentArticle.astro'),
   mapper: entry => {
-    // The asset uri already carries the field's crop transformations
-    const imageUri = entry.image?.asset?.sys.uri;
     return {
       mappedTitle: entry.title,
-      image: imageUri
-        ? { src: imageUri, alt: entry.image?.altText ?? '' }
-        : null,
+      image: mapImage(entry.image),
       canvas: entry.canvas,
       categories: entry.categories ?? [],
     };
@@ -100,27 +118,24 @@ export const form = defineMapping<
   {
     mappedTitle: string;
     description: string | null;
-    image: { src: string; alt: string } | null;
+    image: MappedImage | null;
     categories: string[];
     formId: string | null;
   },
   {
     title: string;
     description?: string;
-    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    image: ImageFieldValue | null;
     categories?: string[];
     form?: { id?: string; sys?: { id?: string } } | null;
   }
 >({
   component: () => import('./components/FormPage/FormPage.astro'),
   mapper: entry => {
-    const imageUri = entry.image?.asset?.sys.uri;
     return {
       mappedTitle: entry.title,
       description: entry.description ?? null,
-      image: imageUri
-        ? { src: imageUri, alt: entry.image?.altText ?? '' }
-        : null,
+      image: mapImage(entry.image),
       categories: entry.categories ?? [],
       // A content type picker value: the id of the form content type
       formId: entry.form?.sys?.id ?? entry.form?.id ?? null,
@@ -135,24 +150,20 @@ export type LandingComposerItem =
 export const landing = defineMapping<
   {
     mappedTitle: string;
-    image: { src: string; alt: string } | null;
+    image: MappedImage | null;
     composer: LandingComposerItem[];
   },
   {
     title: string;
-    image: { altText?: string; asset?: { sys: { uri?: string } } } | null;
+    image: ImageFieldValue | null;
     composer: LandingComposerItem[] | null;
   }
 >({
   component: () => import('./components/LandingPage/LandingPage.astro'),
   mapper: entry => {
-    // The asset uri already carries the field's crop transformations
-    const imageUri = entry.image?.asset?.sys.uri;
     return {
       mappedTitle: entry.title,
-      image: imageUri
-        ? { src: imageUri, alt: entry.image?.altText ?? '' }
-        : null,
+      image: mapImage(entry.image),
       composer: entry.composer ?? [],
     };
   },

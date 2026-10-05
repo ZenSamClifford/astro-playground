@@ -1,13 +1,14 @@
 ---
-import { createRenderer } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import Hero from '~/components/Hero/Hero.astro';
 import type { LandingComposerItem } from '~/contensis.mappers';
+import type { MappedImage } from '~/lib/contensisImage';
+import { createAstroCanvasRenderer } from '~/lib/canvasRendererAstro';
 import Layout from '~/layouts/Layout.astro';
 
 interface LandingPageProps {
   mappedTitle: string;
-  image: { src: string; alt: string } | null;
+  image: MappedImage | null;
   composer: LandingComposerItem[];
 }
 
@@ -15,7 +16,7 @@ interface Props extends ContentTypePageProps<LandingPageProps> {}
 
 const { entry, mappedEntry, node } = Astro.props;
 
-const renderCanvas = createRenderer();
+const renderCanvas = createAstroCanvasRenderer({ sizes: 'article' });
 ---
 
 <Layout pageTitle={entry.entryTitle || node.displayName || 'Landing'}>

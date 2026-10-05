@@ -1,30 +1,28 @@
 ---
+import ImageContensis from '~/components/ImageContensis/ImageContensis.astro';
 import { Badge } from '~/components/ui/badge';
+import type { MappedImage } from '~/lib/contensisImage';
 
 interface Props {
   title: string;
-  image?: { src: string; alt: string } | null;
+  image?: MappedImage | null;
   tags?: string[];
 }
 
 const { title, image, tags = [] } = Astro.props;
+// The section is a fixed 12/5 box, hence the 1920x800 fallback size for images without one.
 ---
 
 <section
   class="relative isolate flex min-h-64 items-end overflow-hidden rounded-lg bg-muted sm:aspect-[12/5] sm:min-h-0"
 >
-  {
-    image && (
-      <img
-        class="absolute inset-0 -z-10 size-full object-cover"
-        src={image.src}
-        alt={image.alt}
-        width="1920"
-        height="800"
-        fetchpriority="high"
-      />
-    )
-  }
+  <ImageContensis
+    class="absolute inset-0 -z-10 size-full object-cover"
+    image={image}
+    sizes="hero"
+    priority
+    fallbackSize={{ width: 1920, height: 800 }}
+  />
   <div
     class:list={[
       'w-full p-6 sm:p-10',

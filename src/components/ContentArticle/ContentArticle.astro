@@ -1,13 +1,15 @@
 ---
-import { type Block, createRenderer } from '@contensis/canvas-html';
+import type { Block } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import Hero from '~/components/Hero/Hero.astro';
 import RelatedPages from '~/components/RelatedPages/RelatedPages.astro';
+import type { MappedImage } from '~/lib/contensisImage';
+import { createAstroCanvasRenderer } from '~/lib/canvasRendererAstro';
 import Layout from '~/layouts/Layout.astro';
 
 interface ContentArticleProps {
   mappedTitle: string;
-  image: { src: string; alt: string } | null;
+  image: MappedImage | null;
   canvas: Block[];
   categories: string[];
 }
@@ -16,7 +18,7 @@ interface Props extends ContentTypePageProps<ContentArticleProps> {}
 
 const { entry, mappedEntry, node, resolver } = Astro.props;
 
-const renderCanvas = createRenderer();
+const renderCanvas = createAstroCanvasRenderer({ sizes: 'article' });
 const canvasHtml = mappedEntry.canvas?.length
   ? renderCanvas({ data: mappedEntry.canvas })
   : '';

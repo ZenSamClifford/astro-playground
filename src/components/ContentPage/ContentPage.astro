@@ -1,8 +1,9 @@
 ---
-import { type Block, createRenderer } from '@contensis/canvas-html';
+import type { Block } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import background from '~/assets/background.svg';
 import ClientSearch from '~/components/deprecated/Search/ClientSearch';
+import { createAstroCanvasRenderer } from '~/lib/canvasRendererAstro';
 import Layout from '~/layouts/Layout.astro';
 
 interface ContentPageProps {
@@ -14,7 +15,7 @@ interface Props extends ContentTypePageProps<ContentPageProps> {}
 
 const { contentTypeId, entry, mappedEntry, node, resolver } = Astro.props;
 
-const renderCanvas = createRenderer();
+const renderCanvas = createAstroCanvasRenderer({ sizes: 'page' });
 const canvasHtml = mappedEntry.canvas
   ? renderCanvas({ data: mappedEntry.canvas })
   : '';

@@ -47,6 +47,28 @@ export default defineConfig({
     mode: 'standalone',
   }),
 
+  // Contensis resizes and re-encodes images itself (Image API), so the service only builds
+  // variant URLs: no sharp, no transform(). See src/lib/contensisImageService.ts.
+  image: {
+    service: {
+      entrypoint: './src/lib/contensisImageService.ts',
+      // These override the defaults in src/lib/contensisImageOptions.ts. Plain values
+      // only: this file cannot import TypeScript from src. Invalid values throw when the
+      // service loads.
+      config: {
+        // The only widths ever requested from the Image API (ascending). Other widths
+        // are snapped up to the next one, and these also build the Hero srcset.
+        widths: [480, 768, 1024, 1440, 1920],
+        // Output format. Only 'webp' is supported (the API ignores AVIF).
+        format: 'webp',
+        // Default quality (1 to maxQuality) when a caller does not pass one.
+        quality: 75,
+        // Upper bound of the accepted quality range (1 to maxQuality).
+        maxQuality: 90,
+      },
+    },
+  },
+
   build: {
     // Contensis blocks only serve paths under a declared static path, and `/static`
     // is the default one injected when a block declares none. The Request Handler
