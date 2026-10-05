@@ -10,11 +10,8 @@
 
 // Content types that can appear in search and listings, in display order.
 // Hard-coded because the `search` content type has no field for editors to
-// choose them.
-export const contentTypes = [
-  { id: 'content', label: 'Content' },
-  { id: 'blog', label: 'Blog' },
-] as const;
+// choose them. Their labels are translated in i18n/ui.ts (see searchTypes.ts).
+export const contentTypes = [{ id: 'content' }, { id: 'blog' }] as const;
 
 // Reusable field sets. Every result needs the sys fields for its key and link.
 const fields = {
@@ -44,7 +41,6 @@ export const search = {
 export const listings = {
   // Aside on the content template: entries sharing a category
   related: {
-    heading: 'Related',
     contentTypes: ['content'],
     fields: fields.link,
     pageSize: 3,

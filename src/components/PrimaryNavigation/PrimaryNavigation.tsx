@@ -11,6 +11,7 @@ import type { MenuItem } from '~/contensis/primaryNavigation';
 interface Props {
   items: MenuItem[];
   currentPath: string;
+  label: string;
 }
 
 /** Home only matches exactly, otherwise every page would match `/`. Other
@@ -25,13 +26,13 @@ const isActive = (path: string, currentPath: string, exact = false) =>
 const panelLinks = (item: MenuItem) =>
   item.linkable ? [{ ...item, children: [] }, ...item.children] : item.children;
 
-const PrimaryNavigation = ({ items, currentPath: rawPath }: Props) => {
+const PrimaryNavigation = ({ items, currentPath: rawPath, label }: Props) => {
   // Node paths carry no trailing slash
   const currentPath =
     rawPath.length > 1 ? rawPath.replace(/\/+$/, '') : rawPath;
 
   return (
-    <NavigationMenu aria-label="Primary" className="max-w-full">
+    <NavigationMenu aria-label={label} className="max-w-full">
       <NavigationMenuList className="flex-wrap justify-start">
         {items.map(item => (
           <NavigationMenuItem key={item.path}>
@@ -65,7 +66,7 @@ const PrimaryNavigation = ({ items, currentPath: rawPath }: Props) => {
             ) : (
               <NavigationMenuLink
                 href={item.path}
-                active={isActive(item.path, currentPath, item.path === '/')}
+                active={isActive(item.path, currentPath, item.home)}
               >
                 {item.label}
               </NavigationMenuLink>

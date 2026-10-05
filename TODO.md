@@ -4,6 +4,6 @@
 - [x] Landing page (Composer)
 - [x] Mini Listing
 - [x] Form
-- [ ] i18n
+- [x] i18n
 - [ ] Insytful search (AI Search)
 - [ ] Personalisation  [https://github.com/contensis/experience-engine](https://github.com/contensis/experience-engine)

@@ -13,7 +13,7 @@
     "format:check": "biome format .",
     "lint": "biome lint .",
     "check": "biome check .",
-    "test": "node --test src/lib/*.test.ts"
+    "test": "node --test src/lib/*.test.ts src/i18n/*.test.ts src/contensis/*.test.ts"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",

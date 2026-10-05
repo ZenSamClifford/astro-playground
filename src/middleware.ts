@@ -32,10 +32,9 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return apiProxy(context.request, CONTENSIS_ASSETS_URL);
 
   return SurrogateTracker.run(async () => {
-    // Start the Site View fetch now so it runs alongside the page's own lookup;
-    // the Layout awaits it. The resolver's client sends the SSR headers that ask
-    // for surrogate keys, and binding this request's store as the response
-    // handler adds the Site View keys to the page, so a Site View change purges it.
+    // The resolver's client sends the SSR headers that ask for surrogate
+    // keys, and binding this request's store as the response handler adds the
+    // Site View keys to the page, so a Site View change purges it.
     const { api } = contentResolver({
       headers: context.request.headers,
       versionStatus: context.url.searchParams.get('versionStatus') ?? undefined,
@@ -45,7 +44,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
       api.clientConfig.responseHandler = {
         200: store.handleApiResponse.bind(store),
       };
-    context.locals.primaryNavigation = loadPrimaryNavigation(api);
+    context.locals.api = api;
+    // Start the Site View in the project's default language now so it runs
+    // alongside the page's own lookup. A page in another language loads its own.
+    const defaultNavigation = loadPrimaryNavigation(api);
+    context.locals.primaryNavigation = async language => {
+      const navigation = await defaultNavigation;
+      if (navigation?.language === language) return navigation.items;
+      return (await loadPrimaryNavigation(api, language))?.items;
+    };
 
     const response = await next();
 

@@ -8,10 +8,14 @@ import {
   MoreHorizontalIcon,
 } from 'lucide-react';
 
-function Pagination({ className, ...props }: React.ComponentProps<'nav'>) {
+function Pagination({
+  className,
+  'aria-label': ariaLabel = 'pagination',
+  ...props
+}: React.ComponentProps<'nav'>) {
   return (
     <nav
-      aria-label="pagination"
+      aria-label={ariaLabel}
       data-slot="pagination"
       className={cn('mx-auto flex w-full justify-center', className)}
       {...props}
@@ -68,16 +72,17 @@ function PaginationLink({
 function PaginationPrevious({
   className,
   text = 'Previous',
+  'aria-label': ariaLabel = 'Go to previous page',
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={ariaLabel}
       size="default"
-      className={cn('pl-1.5!', className)}
+      className={cn('ps-1.5!', className)}
       {...props}
     >
-      <ChevronLeftIcon data-icon="inline-start" />
+      <ChevronLeftIcon data-icon="inline-start" className="rtl:rotate-180" />
       <span className="hidden sm:block">{text}</span>
     </PaginationLink>
   );
@@ -86,25 +91,27 @@ function PaginationPrevious({
 function PaginationNext({
   className,
   text = 'Next',
+  'aria-label': ariaLabel = 'Go to next page',
   ...props
 }: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={ariaLabel}
       size="default"
-      className={cn('pr-1.5!', className)}
+      className={cn('pe-1.5!', className)}
       {...props}
     >
       <span className="hidden sm:block">{text}</span>
-      <ChevronRightIcon data-icon="inline-end" />
+      <ChevronRightIcon data-icon="inline-end" className="rtl:rotate-180" />
     </PaginationLink>
   );
 }
 
 function PaginationEllipsis({
   className,
+  label = 'More pages',
   ...props
-}: React.ComponentProps<'span'>) {
+}: React.ComponentProps<'span'> & { label?: string }) {
   return (
     <span
       aria-hidden
@@ -116,7 +123,7 @@ function PaginationEllipsis({
       {...props}
     >
       <MoreHorizontalIcon />
-      <span className="sr-only">More pages</span>
+      <span className="sr-only">{label}</span>
     </span>
   );
 }

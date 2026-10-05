@@ -1,3 +1,4 @@
+import type { Translate, UiKey } from '~/i18n/ui';
 import { contentTypes } from '~/search.config';
 
 export const allTypes = 'all';
@@ -9,5 +10,12 @@ export const toSearchType = (value: string | null): SearchType =>
     ? (value as SearchType)
     : allTypes;
 
-export const searchTypeLabel = (contentTypeId: string) =>
-  contentTypes.find(type => type.id === contentTypeId)?.label ?? contentTypeId;
+// Translation key for each content type's label (see i18n/ui.ts)
+const typeLabelKey: Record<string, UiKey> = {
+  content: 'typeContent',
+  blog: 'typeBlog',
+};
+
+/** The translated label for a content type, or its id when it has none */
+export const typeLabel = (t: Translate, contentTypeId: string) =>
+  typeLabelKey[contentTypeId] ? t(typeLabelKey[contentTypeId]) : contentTypeId;

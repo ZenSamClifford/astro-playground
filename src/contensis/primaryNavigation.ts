@@ -6,6 +6,8 @@ export type MenuItem = {
   /** Only a Node with an attached entry resolves to a page, so only those link */
   linkable: boolean;
   children: MenuItem[];
+  /** The Root Node's own item, which only matches its exact path */
+  home?: boolean;
 };
 
 /** Levels of the Site View beneath the Root Node. `depth` on getRoot counts
@@ -33,28 +35,40 @@ const toMenuItem = (node: Node, depth: number): MenuItem => ({
 });
 
 /** Home leads, whatever the Root Node's own menu flag says, as long as the
- * root has an entry. A hidden Node is filtered before its children are read,
+ * root has an entry. Its path is the root's own, which is `/` for the project's
+ * default language and e.g. `/es` for another. A hidden Node is filtered before its children are read,
  * so it hides its descendants. */
 export const toPrimaryNavigation = (root: Node): MenuItem[] =>
   [
     {
       label: root.displayName,
-      path: '/',
+      path: root.path,
       linkable: !!root.entry,
       children: [],
+      home: true,
     },
     ...visible(root.children).map(node => toMenuItem(node, DEPTH)),
   ].filter(hasDestination);
 
-/** Resolves to undefined rather than rejecting: routes that never render the
- * Layout (404s) never await this, and an unhandled rejection would crash the
- * process. Undefined means the header is not rendered. */
+export type PrimaryNavigation = {
+  /** The language the Site View was loaded in */
+  language: string;
+  items: MenuItem[];
+};
+
+/** Resolves to undefined rather than rejecting: the request may start this
+ * before knowing a page will render, and an unhandled rejection would crash the
+ * process. Undefined means the navigation is not rendered. Without a language,
+ * the project's default is loaded. */
 export const loadPrimaryNavigation = async (
-  client: Client
-): Promise<MenuItem[] | undefined> => {
+  client: Client,
+  language?: string
+): Promise<PrimaryNavigation | undefined> => {
   try {
-    const root = await client.nodes.getRoot({ depth: DEPTH });
-    return root ? toPrimaryNavigation(root) : undefined;
+    const root = await client.nodes.getRoot({ depth: DEPTH, language });
+    return root
+      ? { language: root.language, items: toPrimaryNavigation(root) }
+      : undefined;
   } catch (error: unknown) {
     console.error('[primaryNavigation] Failed to load the Site View:', error);
     return undefined;
