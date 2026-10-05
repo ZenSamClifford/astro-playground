@@ -3,12 +3,13 @@ import type { ContentTypePageProps } from '@contensis/content-resolver';
 import '@contensis/forms/styles.css';
 import Form from '~/components/Forms/Form.client.tsx';
 import Hero from '~/components/Hero/Hero.astro';
+import type { MappedImage } from '~/lib/contensisImage';
 import Layout from '~/layouts/Layout.astro';
 
 interface FormPageProps {
   mappedTitle: string;
   description: string | null;
-  image: { src: string; alt: string } | null;
+  image: MappedImage | null;
   categories: string[];
   formId: string | null;
 }

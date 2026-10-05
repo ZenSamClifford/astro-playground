@@ -3,11 +3,12 @@ import { createRenderer } from '@contensis/canvas-html';
 import type { ContentTypePageProps } from '@contensis/content-resolver';
 import Hero from '~/components/Hero/Hero.astro';
 import type { LandingComposerItem } from '~/contensis.mappers';
+import type { MappedImage } from '~/lib/contensisImage';
 import Layout from '~/layouts/Layout.astro';
 
 interface LandingPageProps {
   mappedTitle: string;
-  image: { src: string; alt: string } | null;
+  image: MappedImage | null;
   composer: LandingComposerItem[];
 }
 

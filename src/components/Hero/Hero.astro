@@ -1,13 +1,20 @@
 ---
+import { Image } from 'astro:assets';
 import { Badge } from '~/components/ui/badge';
+import type { MappedImage } from '~/lib/contensisImage';
 
 interface Props {
   title: string;
-  image?: { src: string; alt: string } | null;
+  image?: MappedImage | null;
   tags?: string[];
 }
 
 const { title, image, tags = [] } = Astro.props;
+
+// Dimensions are missing only when mapImage could not resolve them (it already warns in dev).
+const hasSize = !!image?.width && !!image?.height;
+const width = hasSize ? image?.width : 1920;
+const height = hasSize ? image?.height : 800;
 ---
 
 <section
@@ -15,13 +22,16 @@ const { title, image, tags = [] } = Astro.props;
 >
   {
     image && (
-      <img
+      <Image
         class="absolute inset-0 -z-10 size-full object-cover"
         src={image.src}
         alt={image.alt}
-        width="1920"
-        height="800"
+        width={width}
+        height={height}
+        sizes="100vw"
         fetchpriority="high"
+        loading="eager"
+        decoding="async"
       />
     )
   }
